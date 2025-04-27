@@ -24,7 +24,7 @@ defmodule Contex.MixProject do
     ]
   end
 
-  defp description() do
+  defp description do
     "Contex - a server-side charting library for Elixir."
   end
 
@@ -35,7 +35,8 @@ defmodule Contex.MixProject do
       {:sweet_xml, "~> 0.7.3", only: :test},
       {:floki, "~> 0.34.2", only: :test},
       {:extructure, "~> 1.0"},
-      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false}
+      {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:styler, "~> 1.4", only: [:dev, :test], runtime: false}
     ]
   end
 
@@ -56,7 +57,7 @@ defmodule Contex.MixProject do
 
   defp docs_before_closing_head_tag(_), do: ""
 
-  defp package() do
+  defp package do
     [
       name: "contex",
       # These are the default files included in the package
