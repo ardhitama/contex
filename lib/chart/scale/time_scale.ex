@@ -11,7 +11,6 @@ defmodule Contex.TimeScale do
 
   """
   alias __MODULE__
-
   alias Contex.Utils
 
   @type datetimes() :: NaiveDateTime.t() | DateTime.t()
@@ -67,7 +66,7 @@ defmodule Contex.TimeScale do
   Creates a new TimeScale struct with basic defaults set
   """
   @spec new :: Contex.TimeScale.t()
-  def new() do
+  def new do
     %TimeScale{range: {0.0, 1.0}, interval_count: 11}
   end
 
@@ -77,8 +76,7 @@ defmodule Contex.TimeScale do
   Default is 10.
   """
   @spec interval_count(Contex.TimeScale.t(), integer()) :: Contex.TimeScale.t()
-  def interval_count(%TimeScale{} = scale, interval_count)
-      when is_integer(interval_count) and interval_count > 1 do
+  def interval_count(%TimeScale{} = scale, interval_count) when is_integer(interval_count) and interval_count > 1 do
     scale
     |> struct(interval_count: interval_count)
     |> nice()
@@ -156,27 +154,20 @@ defmodule Contex.TimeScale do
   end
 
   @doc false
-  def add_interval(dt, {:seconds, _, duration_msec}, count),
-    do: Utils.date_add(dt, duration_msec * count, :millisecond)
+  def add_interval(dt, {:seconds, _, duration_msec}, count), do: Utils.date_add(dt, duration_msec * count, :millisecond)
 
-  def add_interval(dt, {:minutes, _, duration_msec}, count),
-    do: Utils.date_add(dt, duration_msec * count, :millisecond)
+  def add_interval(dt, {:minutes, _, duration_msec}, count), do: Utils.date_add(dt, duration_msec * count, :millisecond)
 
-  def add_interval(dt, {:hours, _, duration_msec}, count),
-    do: Utils.date_add(dt, duration_msec * count, :millisecond)
+  def add_interval(dt, {:hours, _, duration_msec}, count), do: Utils.date_add(dt, duration_msec * count, :millisecond)
 
-  def add_interval(dt, {:days, _, duration_msec}, count),
-    do: Utils.date_add(dt, duration_msec * count, :millisecond)
+  def add_interval(dt, {:days, _, duration_msec}, count), do: Utils.date_add(dt, duration_msec * count, :millisecond)
 
-  def add_interval(dt, {:months, interval_size, _}, count),
-    do: Utils.date_add(dt, interval_size * count, :months)
+  def add_interval(dt, {:months, interval_size, _}, count), do: Utils.date_add(dt, interval_size * count, :months)
 
-  def add_interval(dt, {:years, interval_size, _}, count),
-    do: Utils.date_add(dt, interval_size * count, :years)
+  def add_interval(dt, {:years, interval_size, _}, count), do: Utils.date_add(dt, interval_size * count, :years)
 
   # NOTE: Don't try this at home kiddies. Relies on internal representations of DateTime and NaiveDateTime
-  defp round_down_to(dt, {:seconds, n, _}),
-    do: %{dt | microsecond: {0, 0}, second: round_down_multiple(dt.second, n)}
+  defp round_down_to(dt, {:seconds, n, _}), do: %{dt | microsecond: {0, 0}, second: round_down_multiple(dt.second, n)}
 
   defp round_down_to(dt, {:minutes, n, _}),
     do: %{dt | microsecond: {0, 0}, second: 0, minute: round_down_multiple(dt.minute, n)}
@@ -184,35 +175,26 @@ defmodule Contex.TimeScale do
   defp round_down_to(dt, {:hours, n, _}),
     do: %{dt | microsecond: {0, 0}, second: 0, minute: 0, hour: round_down_multiple(dt.hour, n)}
 
-  defp round_down_to(dt, {:days, 1, _}),
-    do: %{dt | microsecond: {0, 0}, second: 0, minute: 0, hour: 0}
+  defp round_down_to(dt, {:days, 1, _}), do: %{dt | microsecond: {0, 0}, second: 0, minute: 0, hour: 0}
 
   defp round_down_to(dt, {:days, n, _}),
-    do: %{
-      dt
-      | microsecond: {0, 0},
-        second: 0,
-        minute: 0,
-        hour: 0,
-        day: round_down_multiple(dt.day, n) |> max(1)
-    }
+    do: %{dt | microsecond: {0, 0}, second: 0, minute: 0, hour: 0, day: dt.day |> round_down_multiple(n) |> max(1)}
 
-  defp round_down_to(dt, {:months, 1, _}),
-    do: %{dt | microsecond: {0, 0}, second: 0, minute: 0, hour: 0, day: 1}
+  defp round_down_to(dt, {:months, 1, _}), do: %{dt | microsecond: {0, 0}, second: 0, minute: 0, hour: 0, day: 1}
 
   defp round_down_to(dt, {:months, n, _}), do: round_down_month(dt, n)
 
-  defp round_down_to(dt, {:years, 1, _}),
-    do: %{dt | microsecond: {0, 0}, second: 0, minute: 0, hour: 0, day: 1, month: 1}
+  defp round_down_to(dt, {:years, 1, _}), do: %{dt | microsecond: {0, 0}, second: 0, minute: 0, hour: 0, day: 1, month: 1}
 
   defp round_down_month(dt, n) do
     month = round_down_multiple(dt.month, n)
     year = dt.year
 
     {month, year} =
-      case month > 0 do
-        true -> {month, year}
-        _ -> {month + 12, year - 1}
+      if month > 0 do
+        {month, year}
+      else
+        {month + 12, year - 1}
       end
 
     day = :calendar.last_day_of_the_month(year, month)
@@ -285,17 +267,11 @@ defmodule Contex.TimeScale do
   defp round_down_multiple(value, multiple), do: div(value, multiple) * multiple
 
   defimpl Contex.Scale do
-    def domain_to_range_fn(%TimeScale{} = scale),
-      do: TimeScale.get_domain_to_range_function(scale)
+    def domain_to_range_fn(%TimeScale{} = scale), do: TimeScale.get_domain_to_range_function(scale)
 
-    def ticks_domain(%TimeScale{
-          nice_domain: {min_d, _},
-          interval_count: interval_count,
-          tick_interval: tick_interval
-        })
+    def ticks_domain(%TimeScale{nice_domain: {min_d, _}, interval_count: interval_count, tick_interval: tick_interval})
         when is_number(interval_count) do
-      0..interval_count
-      |> Enum.map(fn i -> TimeScale.add_interval(min_d, tick_interval, i) end)
+      Enum.map(0..interval_count, fn i -> TimeScale.add_interval(min_d, tick_interval, i) end)
     end
 
     def ticks_domain(_), do: []
@@ -303,7 +279,8 @@ defmodule Contex.TimeScale do
     def ticks_range(%TimeScale{} = scale) do
       transform_func = TimeScale.get_domain_to_range_function(scale)
 
-      ticks_domain(scale)
+      scale
+      |> ticks_domain()
       |> Enum.map(transform_func)
     end
 
@@ -314,20 +291,15 @@ defmodule Contex.TimeScale do
 
     def get_range(%TimeScale{range: {min_r, max_r}}), do: {min_r, max_r}
 
-    def set_range(%TimeScale{} = scale, start, finish)
-        when is_number(start) and is_number(finish) do
+    def set_range(%TimeScale{} = scale, start, finish) when is_number(start) and is_number(finish) do
       %{scale | range: {start, finish}}
     end
 
-    def set_range(%TimeScale{} = scale, {start, finish})
-        when is_number(start) and is_number(finish),
-        do: set_range(scale, start, finish)
+    def set_range(%TimeScale{} = scale, {start, finish}) when is_number(start) and is_number(finish),
+      do: set_range(scale, start, finish)
 
     def get_formatted_tick(
-          %TimeScale{
-            display_format: display_format,
-            custom_tick_formatter: custom_tick_formatter
-          },
+          %TimeScale{display_format: display_format, custom_tick_formatter: custom_tick_formatter},
           tick_val
         ) do
       format_tick_text(tick_val, display_format, custom_tick_formatter)
@@ -336,7 +308,6 @@ defmodule Contex.TimeScale do
     defp format_tick_text(tick, _, custom_tick_formatter) when is_function(custom_tick_formatter),
       do: custom_tick_formatter.(tick)
 
-    defp format_tick_text(tick, display_format, _),
-      do: NimbleStrftime.format(tick, display_format)
+    defp format_tick_text(tick, display_format, _), do: NimbleStrftime.format(tick, display_format)
   end
 end

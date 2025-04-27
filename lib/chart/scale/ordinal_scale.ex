@@ -53,8 +53,7 @@ defmodule Contex.OrdinalScale do
   """
   @spec domain(Contex.OrdinalScale.t(), list()) :: Contex.OrdinalScale.t()
   def domain(%OrdinalScale{} = ordinal_scale, data) when is_list(data) do
-    %{ordinal_scale | domain: data}
-    |> update_transform_funcs()
+    update_transform_funcs(%{ordinal_scale | domain: data})
   end
 
   @doc """
@@ -69,14 +68,11 @@ defmodule Contex.OrdinalScale do
   """
   def padding(%OrdinalScale{} = scale, padding) when is_number(padding) do
     # We need to update the transform functions if we change the padding as the band calculations need it
-    %{scale | padding: padding}
-    |> update_transform_funcs()
+    update_transform_funcs(%{scale | padding: padding})
   end
 
   @doc false
-  def update_transform_funcs(
-        %OrdinalScale{domain: domain, range: {start_r, end_r}, padding: padding} = scale
-      )
+  def update_transform_funcs(%OrdinalScale{domain: domain, range: {start_r, end_r}, padding: padding} = scale)
       when is_list(domain) and is_number(start_r) and is_number(end_r) and is_number(padding) do
     domain_count = Kernel.length(domain)
     range_width = end_r - start_r
@@ -88,9 +84,10 @@ defmodule Contex.OrdinalScale do
       end
 
     flip_padding =
-      case start_r < end_r do
-        true -> 1.0
-        _ -> -1.0
+      if start_r < end_r do
+        1.0
+      else
+        -1.0
       end
 
     # Returns centre point of bucket
@@ -158,31 +155,26 @@ defmodule Contex.OrdinalScale do
   defimpl Contex.Scale do
     def ticks_domain(%OrdinalScale{domain: domain}), do: domain
 
-    def ticks_range(%OrdinalScale{domain_to_range_fn: transform_func} = scale)
-        when is_function(transform_func) do
-      ticks_domain(scale)
+    def ticks_range(%OrdinalScale{domain_to_range_fn: transform_func} = scale) when is_function(transform_func) do
+      scale
+      |> ticks_domain()
       |> Enum.map(transform_func)
     end
 
-    def domain_to_range_fn(%OrdinalScale{domain_to_range_fn: domain_to_range_fn}),
-      do: domain_to_range_fn
+    def domain_to_range_fn(%OrdinalScale{domain_to_range_fn: domain_to_range_fn}), do: domain_to_range_fn
 
-    def domain_to_range(%OrdinalScale{domain_to_range_fn: transform_func}, range_val)
-        when is_function(transform_func) do
+    def domain_to_range(%OrdinalScale{domain_to_range_fn: transform_func}, range_val) when is_function(transform_func) do
       transform_func.(range_val)
     end
 
     def get_range(%OrdinalScale{range: {min_r, max_r}}), do: {min_r, max_r}
 
-    def set_range(%OrdinalScale{} = scale, start, finish)
-        when is_number(start) and is_number(finish) do
-      %{scale | range: {start, finish}}
-      |> OrdinalScale.update_transform_funcs()
+    def set_range(%OrdinalScale{} = scale, start, finish) when is_number(start) and is_number(finish) do
+      OrdinalScale.update_transform_funcs(%{scale | range: {start, finish}})
     end
 
-    def set_range(%OrdinalScale{} = scale, {start, finish})
-        when is_number(start) and is_number(finish),
-        do: set_range(scale, start, finish)
+    def set_range(%OrdinalScale{} = scale, {start, finish}) when is_number(start) and is_number(finish),
+      do: set_range(scale, start, finish)
 
     def get_formatted_tick(_, tick_val), do: tick_val
   end

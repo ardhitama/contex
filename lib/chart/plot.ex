@@ -26,8 +26,10 @@ defmodule Contex.Plot do
   appropriate margins depending on the options set.
   """
   import Contex.SVG
+
   alias __MODULE__
-  alias Contex.{Dataset, PlotContent}
+  alias Contex.Dataset
+  alias Contex.PlotContent
 
   defstruct [
     :title,
@@ -78,10 +80,11 @@ defmodule Contex.Plot do
     plot_content = apply(type, :new, [dataset, attrs])
 
     attributes =
-      Keyword.merge(@default_plot_options, attrs)
+      @default_plot_options
+      |> Keyword.merge(attrs)
       |> parse_attributes()
 
-    %Plot{
+    calculate_margins(%Plot{
       title: attributes.title,
       subtitle: attributes.subtitle,
       x_label: attributes.x_label,
@@ -90,8 +93,7 @@ defmodule Contex.Plot do
       height: height,
       plot_content: plot_content,
       plot_options: attributes.plot_options
-    }
-    |> calculate_margins()
+    })
   end
 
   @doc """
@@ -101,8 +103,7 @@ defmodule Contex.Plot do
   def new(width, height, plot_content) do
     plot_options = %{show_x_axis: true, show_y_axis: true, legend_setting: :legend_none}
 
-    %Plot{plot_content: plot_content, width: width, height: height, plot_options: plot_options}
-    |> calculate_margins()
+    calculate_margins(%Plot{plot_content: plot_content, width: width, height: height, plot_options: plot_options})
   end
 
   @doc """
@@ -146,7 +147,7 @@ defmodule Contex.Plot do
   """
   @spec attributes(Contex.Plot.t(), keyword()) :: Contex.Plot.t()
   def attributes(%Plot{} = plot, attrs) do
-    attributes_map = Enum.into(attrs, %{})
+    attributes_map = Map.new(attrs)
 
     plot_options =
       Map.merge(
@@ -155,9 +156,7 @@ defmodule Contex.Plot do
       )
 
     plot
-    |> Map.merge(
-      Map.take(attributes_map, [:title, :subtitle, :x_label, :y_label, :width, :height])
-    )
+    |> Map.merge(Map.take(attributes_map, [:title, :subtitle, :x_label, :y_label, :width, :height]))
     |> Map.put(:plot_options, plot_options)
     |> calculate_margins()
   end
@@ -168,8 +167,7 @@ defmodule Contex.Plot do
   def plot_options(%Plot{} = plot, new_plot_options) do
     existing_plot_options = plot.plot_options
 
-    %{plot | plot_options: Map.merge(existing_plot_options, new_plot_options)}
-    |> calculate_margins()
+    calculate_margins(%{plot | plot_options: Map.merge(existing_plot_options, new_plot_options)})
   end
 
   @doc """
@@ -285,36 +283,30 @@ defmodule Contex.Plot do
     result
   end
 
-  defp get_titles_svg(
-         %Plot{title: title, subtitle: subtitle, margins: margins} = _plot,
-         content_width
-       )
+  defp get_titles_svg(%Plot{title: title, subtitle: subtitle, margins: margins} = _plot, content_width)
        when is_binary(title) or is_binary(subtitle) do
     centre = margins.left + content_width / 2.0
     title_y = @top_title_margin
 
     title_svg =
-      case is_non_empty_string(title) do
-        true ->
-          text(centre, title_y, title, class: "exc-title", text_anchor: "middle")
-
-        _ ->
-          ""
+      if is_non_empty_string(title) do
+        text(centre, title_y, title, class: "exc-title", text_anchor: "middle")
+      else
+        ""
       end
 
     subtitle_y =
-      case is_non_empty_string(title) do
-        true -> @top_subtitle_margin + @top_title_margin
-        _ -> @top_subtitle_margin
+      if is_non_empty_string(title) do
+        @top_subtitle_margin + @top_title_margin
+      else
+        @top_subtitle_margin
       end
 
     subtitle_svg =
-      case is_non_empty_string(subtitle) do
-        true ->
-          text(centre, subtitle_y, subtitle, class: "exc-subtitle", text_anchor: "middle")
-
-        _ ->
-          ""
+      if is_non_empty_string(subtitle) do
+        text(centre, subtitle_y, subtitle, class: "exc-subtitle", text_anchor: "middle")
+      else
+        ""
       end
 
     [title_svg, subtitle_svg]
@@ -336,25 +328,21 @@ defmodule Contex.Plot do
     y_label_y = @y_axis_margin
 
     x_label_svg =
-      case is_non_empty_string(x_label) do
-        true ->
-          text(x_label_x, x_label_y, x_label, class: "exc-subtitle", text_anchor: "middle")
-
-        _ ->
-          ""
+      if is_non_empty_string(x_label) do
+        text(x_label_x, x_label_y, x_label, class: "exc-subtitle", text_anchor: "middle")
+      else
+        ""
       end
 
     y_label_svg =
-      case is_non_empty_string(y_label) do
-        true ->
-          text(y_label_x, y_label_y, y_label,
-            class: "exc-subtitle",
-            text_anchor: "middle",
-            transform: "rotate(-90)"
-          )
-
-        false ->
-          ""
+      if is_non_empty_string(y_label) do
+        text(y_label_x, y_label_y, y_label,
+          class: "exc-subtitle",
+          text_anchor: "middle",
+          transform: "rotate(-90)"
+        )
+      else
+        ""
       end
 
     [x_label_svg, y_label_svg]
@@ -368,8 +356,7 @@ defmodule Contex.Plot do
       subtitle: Keyword.get(attrs, :subtitle),
       x_label: Keyword.get(attrs, :x_label),
       y_label: Keyword.get(attrs, :y_label),
-      plot_options:
-        Enum.into(Keyword.take(attrs, [:show_x_axis, :show_y_axis, :legend_setting]), %{})
+      plot_options: Map.new(Keyword.take(attrs, [:show_x_axis, :show_y_axis, :legend_setting]))
     }
   end
 

@@ -18,10 +18,13 @@ defmodule Contex.PointPlot do
   import Contex.SVG
 
   alias __MODULE__
-  alias Contex.{Scale, ContinuousLinearScale, TimeScale}
-  alias Contex.CategoryColourScale
-  alias Contex.{Dataset, Mapping}
   alias Contex.Axis
+  alias Contex.CategoryColourScale
+  alias Contex.ContinuousLinearScale
+  alias Contex.Dataset
+  alias Contex.Mapping
+  alias Contex.Scale
+  alias Contex.TimeScale
   alias Contex.Utils
 
   defstruct [
@@ -151,7 +154,8 @@ defmodule Contex.PointPlot do
   @deprecated "Default scales are now silently applied"
   @spec set_default_scales(Contex.PointPlot.t()) :: Contex.PointPlot.t()
   def set_default_scales(%PointPlot{mapping: %{column_map: column_map}} = plot) do
-    set_x_col_name(plot, column_map.x_col)
+    plot
+    |> set_x_col_name(column_map.x_col)
     |> set_y_col_names(column_map.y_cols)
   end
 
@@ -269,8 +273,7 @@ defmodule Contex.PointPlot do
   @deprecated "Use `:mapping` option in `new/2`"
   @spec set_y_col_names(Contex.PointPlot.t(), [Contex.Dataset.column_name()]) ::
           Contex.PointPlot.t()
-  def set_y_col_names(%PointPlot{mapping: mapping} = plot, y_col_names)
-      when is_list(y_col_names) do
+  def set_y_col_names(%PointPlot{mapping: mapping} = plot, y_col_names) when is_list(y_col_names) do
     mapping = Mapping.update(mapping, %{y_cols: y_col_names})
 
     %{plot | mapping: mapping}
@@ -320,14 +323,16 @@ defmodule Contex.PointPlot do
     x_axis_svg =
       if plot_options.show_x_axis,
         do:
-          get_x_axis(x_scale, plot)
+          x_scale
+          |> get_x_axis(plot)
           |> Axis.to_svg(),
         else: ""
 
     y_axis_svg =
       if plot_options.show_y_axis,
         do:
-          Axis.new_left_axis(y_scale)
+          y_scale
+          |> Axis.new_left_axis()
           |> Axis.set_offset(get_option(plot, :width))
           |> Axis.to_svg(),
         else: ""
@@ -358,24 +363,19 @@ defmodule Contex.PointPlot do
   end
 
   defp get_svg_points(%PointPlot{dataset: dataset} = plot) do
-    dataset.data
-    |> Enum.map(fn row -> get_svg_point(plot, row) end)
+    Enum.map(dataset.data, fn row -> get_svg_point(plot, row) end)
   end
 
-  defp get_svg_point(
-         %PointPlot{
-           mapping: %{accessors: accessors},
-           transforms: transforms
-         },
-         row
-       ) do
+  defp get_svg_point(%PointPlot{mapping: %{accessors: accessors}, transforms: transforms}, row) do
     x =
-      accessors.x_col.(row)
+      row
+      |> accessors.x_col.()
       |> transforms.x.()
 
     fill_val = accessors.fill_col.(row)
 
-    Enum.with_index(accessors.y_cols)
+    accessors.y_cols
+    |> Enum.with_index()
     |> Enum.map(fn {accessor, index} ->
       val = accessor.(row)
 
@@ -413,12 +413,12 @@ defmodule Contex.PointPlot do
     x_scale =
       case custom_x_scale do
         nil -> create_scale_for_column(dataset, x_col_name, {0, width})
-        _ -> custom_x_scale |> Scale.set_range(0, width)
+        _ -> Scale.set_range(custom_x_scale, 0, width)
       end
 
     x_scale = %{x_scale | custom_tick_formatter: get_option(plot, :custom_x_formatter)}
     x_transform = Scale.domain_to_range_fn(x_scale)
-    transforms = Map.merge(plot.transforms, %{x: x_transform})
+    transforms = Map.put(plot.transforms, :x, x_transform)
 
     %{plot | x_scale: x_scale, transforms: transforms}
   end
@@ -432,7 +432,8 @@ defmodule Contex.PointPlot do
       case custom_y_scale do
         nil ->
           {min, max} =
-            get_overall_domain(dataset, y_col_names)
+            dataset
+            |> get_overall_domain(y_col_names)
             |> Utils.fixup_value_range()
 
           ContinuousLinearScale.new()
@@ -440,12 +441,12 @@ defmodule Contex.PointPlot do
           |> Scale.set_range(height, 0)
 
         _ ->
-          custom_y_scale |> Scale.set_range(height, 0)
+          Scale.set_range(custom_y_scale, height, 0)
       end
 
     y_scale = %{y_scale | custom_tick_formatter: get_option(plot, :custom_y_formatter)}
     y_transform = Scale.domain_to_range_fn(y_scale)
-    transforms = Map.merge(plot.transforms, %{y: y_transform})
+    transforms = Map.put(plot.transforms, :y, y_transform)
 
     %{plot | y_scale: y_scale, transforms: transforms}
   end
@@ -463,7 +464,7 @@ defmodule Contex.PointPlot do
     legend_scale = create_legend_colour_scale(y_col_names, fill_col_name, dataset, palette)
 
     transform = create_colour_transform(y_col_names, fill_col_name, dataset, palette)
-    transforms = Map.merge(plot.transforms, %{colour: transform})
+    transforms = Map.put(plot.transforms, :colour, transform)
 
     %{plot | legend_scale: legend_scale, transforms: transforms}
   end
@@ -471,27 +472,28 @@ defmodule Contex.PointPlot do
   defp create_legend_colour_scale(y_col_names, fill_col_name, dataset, palette)
        when length(y_col_names) == 1 and not is_nil(fill_col_name) do
     vals = Dataset.unique_values(dataset, fill_col_name)
-    CategoryColourScale.new(vals) |> CategoryColourScale.set_palette(palette)
+    vals |> CategoryColourScale.new() |> CategoryColourScale.set_palette(palette)
   end
 
   defp create_legend_colour_scale(y_col_names, _fill_col_name, _dataset, palette) do
-    CategoryColourScale.new(y_col_names) |> CategoryColourScale.set_palette(palette)
+    y_col_names |> CategoryColourScale.new() |> CategoryColourScale.set_palette(palette)
   end
 
   defp create_colour_transform(y_col_names, fill_col_name, dataset, palette)
        when length(y_col_names) == 1 and not is_nil(fill_col_name) do
     vals = Dataset.unique_values(dataset, fill_col_name)
-    scale = CategoryColourScale.new(vals) |> CategoryColourScale.set_palette(palette)
+    scale = vals |> CategoryColourScale.new() |> CategoryColourScale.set_palette(palette)
 
     fn _col_index, fill_val -> CategoryColourScale.colour_for_value(scale, fill_val) end
   end
 
   defp create_colour_transform(y_col_names, _fill_col_name, _dataset, palette) do
     fill_indices =
-      Enum.with_index(y_col_names)
+      y_col_names
+      |> Enum.with_index()
       |> Enum.map(fn {_, index} -> index end)
 
-    scale = CategoryColourScale.new(fill_indices) |> CategoryColourScale.set_palette(palette)
+    scale = fill_indices |> CategoryColourScale.new() |> CategoryColourScale.set_palette(palette)
 
     fn col_index, _fill_val -> CategoryColourScale.colour_for_value(scale, col_index) end
   end

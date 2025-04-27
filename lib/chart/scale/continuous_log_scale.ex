@@ -46,8 +46,8 @@ defmodule Contex.ContinuousLogScale do
   """
 
   alias __MODULE__
-  alias Contex.ScaleUtils
   alias Contex.Dataset
+  alias Contex.ScaleUtils
 
   defstruct [
     :domain,
@@ -75,15 +75,17 @@ defmodule Contex.ContinuousLogScale do
   @spec new :: Contex.ContinuousLogScale.t()
   def new(options \\ []) do
     dom =
-      get_domain(
-        Keyword.get(options, :domain, :notfound),
+      options
+      |> Keyword.get(:domain, :notfound)
+      |> get_domain(
         Keyword.get(options, :dataset, :notfound),
         Keyword.get(options, :axis, :notfound)
       )
       |> ScaleUtils.validate_range(":domain")
 
     rng =
-      Keyword.get(options, :range, nil)
+      options
+      |> Keyword.get(:range, nil)
       |> ScaleUtils.validate_range_nil(":range")
 
     ic = Keyword.get(options, :interval_count, 10)
@@ -91,11 +93,13 @@ defmodule Contex.ContinuousLogScale do
     is = Keyword.get(options, :tick_positions, nil)
 
     lb =
-      Keyword.get(options, :log_base, :base_2)
+      options
+      |> Keyword.get(:log_base, :base_2)
       |> ScaleUtils.validate_option(":log_base", [:base_2, :base_e, :base_10])
 
     neg_num =
-      Keyword.get(options, :negative_numbers, :clip)
+      options
+      |> Keyword.get(:negative_numbers, :clip)
       |> ScaleUtils.validate_option(":negative_numbers", [:clip, :mask, :sym])
 
     lin_rng = Keyword.get(options, :linear_range, nil)
@@ -109,7 +113,7 @@ defmodule Contex.ContinuousLogScale do
         :base_10 -> &:math.log10/1
       end
 
-    %ContinuousLogScale{
+    nice(%ContinuousLogScale{
       domain: dom,
       nice_domain: nil,
       range: rng,
@@ -120,8 +124,7 @@ defmodule Contex.ContinuousLogScale do
       log_base_fn: log_base_fn,
       negative_numbers: neg_num,
       linear_range: lin_rng
-    }
-    |> nice()
+    })
   end
 
   @doc """
@@ -129,11 +132,7 @@ defmodule Contex.ContinuousLogScale do
   """
   @spec nice(Contex.ContinuousLogScale.t()) :: Contex.ContinuousLogScale.t()
   def nice(
-        %ContinuousLogScale{
-          domain: {min_d, max_d},
-          interval_count: interval_count,
-          tick_positions: tick_positions
-        } = c
+        %ContinuousLogScale{domain: {min_d, max_d}, interval_count: interval_count, tick_positions: tick_positions} = c
       ) do
     %{
       nice_domain: nice_domain,
@@ -163,11 +162,9 @@ defmodule Contex.ContinuousLogScale do
   - If there is a dataset and a column or a list of columns, we use that
   - If all else fails, we use {0, 1}
   """
-  def get_domain(:notfound, %Dataset{} = requested_dataset, requested_columns)
-      when is_list(requested_columns) do
+  def get_domain(:notfound, %Dataset{} = requested_dataset, requested_columns) when is_list(requested_columns) do
     all_ranges =
-      requested_columns
-      |> Enum.map(fn c -> Dataset.column_extents(requested_dataset, c) end)
+      Enum.map(requested_columns, fn c -> Dataset.column_extents(requested_dataset, c) end)
 
     minimum =
       all_ranges
@@ -185,8 +182,7 @@ defmodule Contex.ContinuousLogScale do
   def get_domain(:notfound, %Dataset{} = requested_dataset, requested_column),
     do: get_domain(:notfound, requested_dataset, [requested_column])
 
-  def get_domain({_a, _b} = requested_domain, _requested_dataset, _requested_column),
-    do: requested_domain
+  def get_domain({_a, _b} = requested_domain, _requested_dataset, _requested_column), do: requested_domain
 
   def get_domain(_, _, _), do: {0, 1}
 
@@ -268,13 +264,10 @@ defmodule Contex.ContinuousLogScale do
 
   defimpl Contex.Scale do
     @spec domain_to_range_fn(Contex.ContinuousLogScale.t()) :: (number -> float)
-    def domain_to_range_fn(%ContinuousLogScale{} = scale),
-      do: ContinuousLogScale.get_domain_to_range_function(scale)
+    def domain_to_range_fn(%ContinuousLogScale{} = scale), do: ContinuousLogScale.get_domain_to_range_function(scale)
 
     @spec ticks_domain(Contex.ContinuousLogScale.t()) :: list(number)
-    def ticks_domain(%ContinuousLogScale{
-          tick_positions: tick_positions
-        }) do
+    def ticks_domain(%ContinuousLogScale{tick_positions: tick_positions}) do
       tick_positions
     end
 
@@ -284,7 +277,8 @@ defmodule Contex.ContinuousLogScale do
     def ticks_range(%ContinuousLogScale{} = scale) do
       transform_func = ContinuousLogScale.get_domain_to_range_function(scale)
 
-      ticks_domain(scale)
+      scale
+      |> ticks_domain()
       |> Enum.map(transform_func)
     end
 
@@ -299,23 +293,18 @@ defmodule Contex.ContinuousLogScale do
 
     @spec set_range(Contex.ContinuousLogScale.t(), number, number) ::
             Contex.ContinuousLogScale.t()
-    def set_range(%ContinuousLogScale{} = scale, start, finish)
-        when is_number(start) and is_number(finish) do
+    def set_range(%ContinuousLogScale{} = scale, start, finish) when is_number(start) and is_number(finish) do
       %{scale | range: {start, finish}}
     end
 
     @spec set_range(Contex.ContinuousLogScale.t(), {number, number}) ::
             Contex.ContinuousLogScale.t()
-    def set_range(%ContinuousLogScale{} = scale, {start, finish})
-        when is_number(start) and is_number(finish),
-        do: set_range(scale, start, finish)
+    def set_range(%ContinuousLogScale{} = scale, {start, finish}) when is_number(start) and is_number(finish),
+      do: set_range(scale, start, finish)
 
     @spec get_formatted_tick(Contex.ContinuousLogScale.t(), any) :: binary
     def get_formatted_tick(
-          %ContinuousLogScale{
-            display_decimals: display_decimals,
-            custom_tick_formatter: custom_tick_formatter
-          },
+          %ContinuousLogScale{display_decimals: display_decimals, custom_tick_formatter: custom_tick_formatter},
           tick_val
         ) do
       ScaleUtils.format_tick_text(tick_val, display_decimals, custom_tick_formatter)

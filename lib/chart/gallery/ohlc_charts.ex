@@ -1,6 +1,4 @@
 defmodule Contex.Gallery.OHLCCharts do
-  import Contex.Gallery.Sample, only: [graph: 1]
-
   @moduledoc """
   A gallery of OHLC Charts.
 
@@ -14,6 +12,8 @@ defmodule Contex.Gallery.OHLCCharts do
 
   """
 
+  import Contex.Gallery.Sample, only: [graph: 1]
+
   @doc """
   Some OHLC charts.
 
@@ -26,5 +26,5 @@ defmodule Contex.Gallery.OHLCCharts do
 
 
   """
-  def plain(), do: 0
+  def plain, do: 0
 end

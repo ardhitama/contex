@@ -1,12 +1,17 @@
 defmodule ContexPointPlotTest do
   use ExUnit.Case
 
-  alias Contex.{CategoryColourScale, Dataset, PointPlot, Plot}
   import SweetXml
+
+  alias Contex.CategoryColourScale
+  alias Contex.Dataset
+  alias Contex.Plot
+  alias Contex.PointPlot
 
   setup do
     plot =
-      Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+      [{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}]
+      |> Dataset.new(["aa", "bb", "cccc", "d"])
       |> PointPlot.new()
 
     %{plot: plot}
@@ -26,7 +31,8 @@ defmodule ContexPointPlotTest do
 
     test "given data from a map and a valid column map, returns a PointPlot struct accordingly" do
       plot =
-        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
+        [%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}]
+        |> Dataset.new()
         |> PointPlot.new(mapping: %{x_col: "bb", y_cols: ["aa"]})
 
       assert get_option(plot, :width) == 100
@@ -40,7 +46,8 @@ defmodule ContexPointPlotTest do
         ArgumentError,
         "Can not create default data mappings with Map data.",
         fn ->
-          Dataset.new([%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}])
+          [%{"bb" => 2, "aa" => 2}, %{"aa" => 3, "bb" => 4}]
+          |> Dataset.new()
           |> PointPlot.new()
         end
       )
@@ -63,7 +70,7 @@ defmodule ContexPointPlotTest do
     end
 
     test "sets the palette to :default without an atom or list", %{plot: plot} do
-      plot = PointPlot.colours(plot, 12345)
+      plot = PointPlot.colours(plot, 12_345)
       assert get_option(plot, :colour_palette) == :default
     end
   end
@@ -86,7 +93,8 @@ defmodule ContexPointPlotTest do
       plot = PointPlot.axis_label_rotation(plot, 45)
 
       assert ["rotate(-45)"] ==
-               Plot.new(200, 200, plot)
+               200
+               |> Plot.new(200, plot)
                |> Plot.to_svg()
                |> elem(1)
                |> IO.chardata_to_string()
@@ -97,7 +105,8 @@ defmodule ContexPointPlotTest do
 
   describe "to_svg/1" do
     defp plot_iodata_to_map(plot_iodata) do
-      IO.chardata_to_string(plot_iodata)
+      plot_iodata
+      |> IO.chardata_to_string()
       |> String.replace_prefix("", "<svg>")
       |> String.replace_suffix("", "</svg>")
       |> xpath(~x"//g/circle"l,
@@ -113,19 +122,23 @@ defmodule ContexPointPlotTest do
       opts = %{show_x_axis: true, show_y_axis: true}
 
       points_map =
-        PointPlot.to_svg(plot, opts)
+        plot
+        |> PointPlot.to_svg(opts)
         |> plot_iodata_to_map()
 
       assert ["fill:#1f77b4;"] ==
-               Enum.map(points_map, fn point -> Map.get(point, :style) end)
+               points_map
+               |> Enum.map(fn point -> Map.get(point, :style) end)
                |> Enum.uniq()
 
       assert [{57.143, 42.857}, {100, 0}, {0, 100}] ==
                Enum.map(points_map, fn point ->
-                 {Map.get(point, :cx)
+                 {point
+                  |> Map.get(:cx)
                   |> String.to_float()
                   |> Float.round(3),
-                  Map.get(point, :cy)
+                  point
+                  |> Map.get(:cy)
                   |> String.to_float()
                   |> Float.round(3)}
                end)
@@ -133,11 +146,12 @@ defmodule ContexPointPlotTest do
 
     test "generates equivalent output when passed map data", %{plot: plot} do
       other_plot =
-        Dataset.new([
+        [
           %{"aa" => 1, "bb" => 2, "cccc" => 3, "dd" => 4},
           %{"aa" => 4, "bb" => 5, "cccc" => 6, "dd" => 4},
           %{"aa" => -3, "bb" => -2, "cccc" => -1, "dd" => 0}
-        ])
+        ]
+        |> Dataset.new()
         |> Plot.new(PointPlot, 200, 200, mapping: %{x_col: "aa", y_cols: ["bb"]})
         |> Plot.to_svg()
 
@@ -151,13 +165,15 @@ defmodule ContexPointPlotTest do
       plot = PointPlot.set_colour_col_name(plot, "d")
 
       points_map =
-        Plot.new(200, 200, plot)
+        200
+        |> Plot.new(200, plot)
         |> Plot.to_svg()
         |> elem(1)
         |> plot_iodata_to_map()
 
       assert 2 ==
-               Enum.map(points_map, fn point -> Map.get(point, :style) end)
+               points_map
+               |> Enum.map(fn point -> Map.get(point, :style) end)
                |> Enum.uniq()
                |> Enum.count()
     end
@@ -200,7 +216,7 @@ defmodule ContexPointPlotTest do
     end
 
     test "sets the fill scale to the unique values of the given column", %{plot: plot} do
-      plot = PointPlot.set_colour_col_name(plot, "d") |> PointPlot.prepare_scales()
+      plot = plot |> PointPlot.set_colour_col_name("d") |> PointPlot.prepare_scales()
       assert %CategoryColourScale{values: [4, 0]} = plot.legend_scale
     end
   end

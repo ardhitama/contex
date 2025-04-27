@@ -19,7 +19,8 @@ defimpl Contex.Legend, for: Contex.CategoryColourScale do
     values = scale.values
 
     legend_items =
-      Enum.with_index(values)
+      values
+      |> Enum.with_index()
       |> Enum.map(fn {val, index} ->
         fill = CategoryColourScale.colour_for_value(scale, val)
         y = index * @item_spacing

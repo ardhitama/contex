@@ -1,11 +1,13 @@
 defmodule ContexLineChartTest do
   use ExUnit.Case
 
-  alias Contex.{Dataset, LinePlot}
+  alias Contex.Dataset
+  alias Contex.LinePlot
 
   setup do
     plot =
-      Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+      [{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}]
+      |> Dataset.new(["aa", "bb", "cccc", "d"])
       |> LinePlot.new()
 
     %{plot: plot}
@@ -41,7 +43,7 @@ defmodule ContexLineChartTest do
       C330.6666666666667,237.5 388.3333333333333,60 404,20 "
       """
 
-      output = Contex.SVG.line(points, true) |> IO.iodata_to_binary()
+      output = points |> Contex.SVG.line(true) |> IO.iodata_to_binary()
       IO.inspect(output)
     end
   end

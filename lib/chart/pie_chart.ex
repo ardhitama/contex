@@ -12,7 +12,9 @@ defmodule Contex.PieChart do
   """
 
   alias __MODULE__
-  alias Contex.{Dataset, Mapping, CategoryColourScale}
+  alias Contex.CategoryColourScale
+  alias Contex.Dataset
+  alias Contex.Mapping
 
   defstruct [
     :dataset,
@@ -136,10 +138,9 @@ defmodule Contex.PieChart do
   end
 
   def get_categories(%PieChart{dataset: dataset, mapping: mapping}) do
-    cat_accessor = dataset |> Dataset.value_fn(mapping.column_map[:category_col])
+    cat_accessor = Dataset.value_fn(dataset, mapping.column_map[:category_col])
 
-    dataset.data
-    |> Enum.map(&cat_accessor.(&1))
+    Enum.map(dataset.data, &cat_accessor.(&1))
   end
 
   defp set_option(%PieChart{options: options} = plot, key, value) do
@@ -157,7 +158,8 @@ defmodule Contex.PieChart do
   end
 
   defp get_colour_palette(%PieChart{} = chart) do
-    get_categories(chart)
+    chart
+    |> get_categories()
     |> CategoryColourScale.new()
     |> CategoryColourScale.set_palette(get_option(chart, :colour_palette))
   end
@@ -170,7 +172,8 @@ defmodule Contex.PieChart do
     r = height / 2
     stroke_circumference = 2 * :math.pi() * r / 2
 
-    scale_values(chart)
+    chart
+    |> scale_values()
     |> Enum.map_reduce({0, 0}, fn {value, category}, {idx, offset} ->
       text_rotation = rotate_for(value, offset)
 
@@ -230,10 +233,10 @@ defmodule Contex.PieChart do
 
   @spec scale_values(PieChart.t()) :: [{value :: number(), label :: any()}]
   defp scale_values(%PieChart{dataset: dataset, mapping: mapping}) do
-    val_accessor = dataset |> Dataset.value_fn(mapping.column_map[:value_col])
-    cat_accessor = dataset |> Dataset.value_fn(mapping.column_map[:category_col])
+    val_accessor = Dataset.value_fn(dataset, mapping.column_map[:value_col])
+    cat_accessor = Dataset.value_fn(dataset, mapping.column_map[:category_col])
 
-    sum = dataset.data |> Enum.reduce(0, fn col, acc -> val_accessor.(col) + acc end)
+    sum = Enum.reduce(dataset.data, 0, fn col, acc -> val_accessor.(col) + acc end)
 
     dataset.data
     |> Enum.map_reduce(sum, &{{val_accessor.(&1) / &2 * 100, cat_accessor.(&1)}, &2})

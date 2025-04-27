@@ -7,7 +7,7 @@ defmodule ContexCategoryColourScaleTest do
     values = ["Fred", "Bob", "Fred", "Bill"]
     palette = ["Red", "Green", "Blue"]
 
-    scale = CategoryColourScale.new(values) |> CategoryColourScale.set_palette(palette)
+    scale = values |> CategoryColourScale.new() |> CategoryColourScale.set_palette(palette)
 
     default_colour = CategoryColourScale.get_default_colour(scale)
 

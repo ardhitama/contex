@@ -1,4 +1,5 @@
 defmodule ContexGalleryTester do
+  @moduledoc false
   import Contex.Gallery.Sample, only: [safely_evaluate_svg: 1]
 
   @doc """
@@ -9,13 +10,13 @@ defmodule ContexGalleryTester do
     path = Keyword.get(opts, :path, "lib/chart/gallery")
     aliases = Keyword.get(opts, :aliases, "00_aliases.sample")
 
-    files
-    |> Enum.map(fn f ->
+    Enum.map(files, fn f ->
       assert {:ok, _source_code, svg, _time} =
                safely_evaluate_svg(["#{path}/#{aliases}", "#{path}/#{f}"])
 
       assert {:ok, document} = Floki.parse_document(svg)
-      # IO.puts(inspect(document))
     end)
+
+    # IO.puts(inspect(document))
   end
 end

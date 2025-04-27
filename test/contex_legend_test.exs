@@ -1,22 +1,27 @@
 defmodule ContexLegendTest do
   use ExUnit.Case
 
-  alias Contex.{Dataset, PointPlot}
   import SweetXml
+
+  alias Contex.Dataset
+  alias Contex.PointPlot
 
   describe "to_svg/2" do
     test "returns properly formatted legend" do
       plot =
-        Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+        [{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}]
+        |> Dataset.new(["aa", "bb", "cccc", "d"])
         |> PointPlot.new()
 
       {:safe, svg} =
-        Contex.Plot.new(150, 150, plot)
+        150
+        |> Contex.Plot.new(150, plot)
         |> Contex.Plot.plot_options(%{legend_setting: :legend_right})
         |> Contex.Plot.to_svg()
 
       legend =
-        IO.chardata_to_string(svg)
+        svg
+        |> IO.chardata_to_string()
         |> xpath(~x"//g[@class='exc-legend']",
           box: [
             ~x"./rect",

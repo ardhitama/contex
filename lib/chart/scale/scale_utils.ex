@@ -21,8 +21,7 @@ defmodule Contex.ScaleUtils do
   end
 
   def validate_range(v, label),
-    do:
-      throw("#{label} - a range should be in the form {0.0, 1.0} but you supplied #{inspect(v)}")
+    do: throw("#{label} - a range should be in the form {0.0, 1.0} but you supplied #{inspect(v)}")
 
   def as_float(n) when is_number(n) do
     case(n) do
@@ -37,14 +36,11 @@ defmodule Contex.ScaleUtils do
   def validate_range_nil(nil, _label), do: nil
   def validate_range_nil(r, label), do: validate_range(r, label)
 
-  def validate_option(o, option_name, possible_options)
-      when is_binary(option_name) and is_list(possible_options) do
+  def validate_option(o, option_name, possible_options) when is_binary(option_name) and is_list(possible_options) do
     if o in possible_options do
       o
     else
-      throw(
-        "Option #{option_name} cannot be set to #{o} - valid values are #{inspect(possible_options)} "
-      )
+      throw("Option #{option_name} cannot be set to #{o} - valid values are #{inspect(possible_options)} ")
     end
   end
 
@@ -108,14 +104,8 @@ defmodule Contex.ScaleUtils do
   (can be refactored in Lin)
   """
 
-  def compute_nice_settings(
-        min_d,
-        max_d,
-        explicit_ticks,
-        interval_count
-      )
-      when is_number(min_d) and is_number(max_d) and is_number(interval_count) and
-             interval_count > 1 do
+  def compute_nice_settings(min_d, max_d, explicit_ticks, interval_count)
+      when is_number(min_d) and is_number(max_d) and is_number(interval_count) and interval_count > 1 do
     width = max_d - min_d
     width = if width == 0.0, do: 1.0, else: width
     unrounded_interval_size = width / interval_count
@@ -135,12 +125,10 @@ defmodule Contex.ScaleUtils do
     computed_ticks =
       case explicit_ticks do
         ei when is_list(ei) ->
-          ei
-          |> Enum.filter(fn v -> v >= min_d && v <= max_d end)
+          Enum.filter(ei, fn v -> v >= min_d && v <= max_d end)
 
         _ ->
-          0..adjusted_interval_count
-          |> Enum.map(fn i -> min_d + i * rounded_interval_size end)
+          Enum.map(0..adjusted_interval_count, fn i -> min_d + i * rounded_interval_size end)
       end
 
     %{

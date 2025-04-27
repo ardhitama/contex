@@ -1,12 +1,17 @@
 defmodule ContexPlotTest do
   use ExUnit.Case
 
-  alias Contex.{Plot, Dataset, PointPlot, BarChart}
   import SweetXml
+
+  alias Contex.BarChart
+  alias Contex.Dataset
+  alias Contex.Plot
+  alias Contex.PointPlot
 
   setup do
     plot =
-      Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+      [{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}]
+      |> Dataset.new(["aa", "bb", "cccc", "d"])
       |> PointPlot.new()
 
     plot = Plot.new(150, 200, plot)
@@ -20,7 +25,8 @@ defmodule ContexPlotTest do
   describe "new/5" do
     test "returns a Plot struct with default options and margins" do
       plot =
-        Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+        [{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}]
+        |> Dataset.new(["aa", "bb", "cccc", "d"])
         |> Plot.new(PointPlot, 150, 200)
 
       assert plot.width == 150
@@ -42,7 +48,8 @@ defmodule ContexPlotTest do
 
     test "Sets orientation on BarChart" do
       plot =
-        Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+        [{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}]
+        |> Dataset.new(["aa", "bb", "cccc", "d"])
         |> Plot.new(BarChart, 150, 200, orientation: :horizontal)
 
       assert get_option(plot.plot_content, :orientation) == :horizontal
@@ -52,7 +59,8 @@ defmodule ContexPlotTest do
       plot_options = %{top_margin: 5, right_margin: 6, bottom_margin: 7, left_margin: 8}
 
       plot =
-        Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+        [{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}]
+        |> Dataset.new(["aa", "bb", "cccc", "d"])
         |> Plot.new(BarChart, 150, 200, plot_options: plot_options)
         |> Contex.Plot.plot_options(plot_options)
 
@@ -66,7 +74,8 @@ defmodule ContexPlotTest do
 
     test "returns a Plot struct using assigned attributes" do
       plot =
-        Dataset.new([{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}], ["aa", "bb", "cccc", "d"])
+        [{1, 2, 3, 4}, {4, 5, 6, 4}, {-3, -2, -1, 0}]
+        |> Dataset.new(["aa", "bb", "cccc", "d"])
         |> Plot.new(
           PointPlot,
           150,
@@ -159,8 +168,7 @@ defmodule ContexPlotTest do
   describe "plot_options/2" do
     setup context do
       %{
-        plot:
-          Plot.plot_options(context.plot, %{show_y_axis: false, legend_setting: :legend_right})
+        plot: Plot.plot_options(context.plot, %{show_y_axis: false, legend_setting: :legend_right})
       }
     end
 
@@ -249,13 +257,15 @@ defmodule ContexPlotTest do
   describe "to_svg/1" do
     test "renders plot svg", %{plot: plot} do
       {:safe, svg} =
-        Plot.titles(plot, "The Title", "The Sub")
+        plot
+        |> Plot.titles("The Title", "The Sub")
         |> Plot.axis_labels("X Side", "Y Side")
         |> Plot.plot_options(%{legend_setting: :legend_right})
         |> Plot.to_svg()
 
       svg =
-        IO.chardata_to_string(svg)
+        svg
+        |> IO.chardata_to_string()
         |> xpath(~x"/svg",
           viewbox: ~x"./@viewBox"s,
           title: [
@@ -322,13 +332,15 @@ defmodule ContexPlotTest do
         ])
 
       plot_content =
-        BarChart.new(test_data)
+        test_data
+        |> BarChart.new()
         |> BarChart.set_val_col_names(["Series 1", "Series 2"])
 
       plot = Plot.new(500, 400, plot_content)
 
       assert {:safe, svg} =
-               Plot.titles(plot, "The Title", "The Sub")
+               plot
+               |> Plot.titles("The Title", "The Sub")
                |> Plot.to_svg()
 
       results =

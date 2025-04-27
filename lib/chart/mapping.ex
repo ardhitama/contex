@@ -13,7 +13,7 @@ defmodule Contex.Mapping do
   required elements without knowing anything about the dataset.
   """
 
-  alias Contex.{Dataset}
+  alias Contex.Dataset
 
   defstruct [:column_map, :accessors, :expected_mappings, :dataset]
 
@@ -70,12 +70,10 @@ defmodule Contex.Mapping do
   updates the mapping accordingly and returns the plot.
   """
   @spec update(Contex.Mapping.t(), map()) :: Contex.Mapping.t()
-  def update(
-        %__MODULE__{expected_mappings: expected_mappings, dataset: dataset} = mapping,
-        updated_mappings
-      ) do
+  def update(%__MODULE__{expected_mappings: expected_mappings, dataset: dataset} = mapping, updated_mappings) do
     column_map =
-      Map.merge(mapping.column_map, updated_mappings)
+      mapping.column_map
+      |> Map.merge(updated_mappings)
       |> check_mappings(expected_mappings, dataset)
 
     mapped_accessors = accessors(dataset, column_map)
@@ -88,17 +86,18 @@ defmodule Contex.Mapping do
   end
 
   defp check_mappings(mappings, expected_mappings, %Dataset{} = dataset) do
-    add_nil_for_optional_mappings(mappings, expected_mappings)
+    mappings
+    |> add_nil_for_optional_mappings(expected_mappings)
     |> validate_mappings(expected_mappings, dataset)
   end
 
-  defp default_mapping(_expected_mappings, %Dataset{data: [first | _rest]} = _dataset)
-       when is_map(first) do
+  defp default_mapping(_expected_mappings, %Dataset{data: [first | _rest]} = _dataset) when is_map(first) do
     raise(ArgumentError, "Can not create default data mappings with Map data.")
   end
 
   defp default_mapping(expected_mappings, %Dataset{} = dataset) do
-    Enum.with_index(expected_mappings)
+    expected_mappings
+    |> Enum.with_index()
     |> Enum.reduce(%{}, fn {{expected_mapping, expected_count}, index}, mapping ->
       column_name = Dataset.column_name(dataset, index)
 
@@ -161,7 +160,8 @@ defmodule Contex.Mapping do
     available_columns = [nil | Dataset.column_names(dataset)]
 
     missing_columns =
-      Map.values(column_map)
+      column_map
+      |> Map.values()
       |> List.flatten()
       |> missing_columns(available_columns)
 
@@ -176,16 +176,16 @@ defmodule Contex.Mapping do
   end
 
   defp missing_columns(required_columns, provided_columns) do
-    MapSet.new(required_columns)
+    required_columns
+    |> MapSet.new()
     |> MapSet.difference(MapSet.new(provided_columns))
     |> MapSet.to_list()
   end
 
   defp accessors(dataset, column_map) do
-    Enum.map(column_map, fn {mapping, columns} ->
+    Map.new(column_map, fn {mapping, columns} ->
       {mapping, accessor(dataset, columns)}
     end)
-    |> Enum.into(%{})
   end
 
   defp accessor(dataset, columns) when is_list(columns) do

@@ -72,7 +72,7 @@ defmodule Contex.ContinuousLinearScale do
   Creates a new scale with defaults
   """
   @spec new :: Contex.ContinuousLinearScale.t()
-  def new() do
+  def new do
     %ContinuousLinearScale{range: {0.0, 1.0}, interval_count: 10, display_decimals: nil}
   end
 
@@ -103,9 +103,10 @@ defmodule Contex.ContinuousLinearScale do
   def domain(%ContinuousLinearScale{} = scale, min, max) when is_number(min) and is_number(max) do
     # We can be flexible with the range start > end, but the domain needs to start from the min
     {d_min, d_max} =
-      case min < max do
-        true -> {min, max}
-        _ -> {max, min}
+      if min < max do
+        {min, max}
+      else
+        {max, min}
       end
 
     scale
@@ -126,11 +127,8 @@ defmodule Contex.ContinuousLinearScale do
   end
 
   # NOTE: interval count will likely get adjusted down here to keep things looking nice
-  defp nice(
-         %ContinuousLinearScale{domain: {min_d, max_d}, interval_count: interval_count} = scale
-       )
-       when is_number(min_d) and is_number(max_d) and is_number(interval_count) and
-              interval_count > 1 do
+  defp nice(%ContinuousLinearScale{domain: {min_d, max_d}, interval_count: interval_count} = scale)
+       when is_number(min_d) and is_number(max_d) and is_number(interval_count) and interval_count > 1 do
     width = max_d - min_d
     width = if width == 0.0, do: 1.0, else: width
     unrounded_interval_size = width / interval_count
@@ -171,10 +169,7 @@ defmodule Contex.ContinuousLinearScale do
   end
 
   @doc false
-  def get_domain_to_range_function(%ContinuousLinearScale{
-        nice_domain: {min_d, max_d},
-        range: {min_r, max_r}
-      })
+  def get_domain_to_range_function(%ContinuousLinearScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}})
       when is_number(min_d) and is_number(max_d) and is_number(min_r) and is_number(max_r) do
     domain_width = max_d - min_d
     range_width = max_r - min_r
@@ -203,10 +198,7 @@ defmodule Contex.ContinuousLinearScale do
   def get_domain_to_range_function(_), do: fn x -> x end
 
   @doc false
-  def get_range_to_domain_function(%ContinuousLinearScale{
-        nice_domain: {min_d, max_d},
-        range: {min_r, max_r}
-      })
+  def get_range_to_domain_function(%ContinuousLinearScale{nice_domain: {min_d, max_d}, range: {min_r, max_r}})
       when is_number(min_d) and is_number(max_d) and is_number(min_r) and is_number(max_r) do
     domain_width = max_d - min_d
     range_width = max_r - min_r
@@ -245,8 +237,7 @@ defmodule Contex.ContinuousLinearScale do
           interval_size: interval_size
         })
         when is_number(min_d) and is_number(interval_count) and is_number(interval_size) do
-      0..interval_count
-      |> Enum.map(fn i -> min_d + i * interval_size end)
+      Enum.map(0..interval_count, fn i -> min_d + i * interval_size end)
     end
 
     def ticks_domain(_), do: []
@@ -254,7 +245,8 @@ defmodule Contex.ContinuousLinearScale do
     def ticks_range(%ContinuousLinearScale{} = scale) do
       transform_func = ContinuousLinearScale.get_domain_to_range_function(scale)
 
-      ticks_domain(scale)
+      scale
+      |> ticks_domain()
       |> Enum.map(transform_func)
     end
 
@@ -265,20 +257,15 @@ defmodule Contex.ContinuousLinearScale do
 
     def get_range(%ContinuousLinearScale{range: {min_r, max_r}}), do: {min_r, max_r}
 
-    def set_range(%ContinuousLinearScale{} = scale, start, finish)
-        when is_number(start) and is_number(finish) do
+    def set_range(%ContinuousLinearScale{} = scale, start, finish) when is_number(start) and is_number(finish) do
       %{scale | range: {start, finish}}
     end
 
-    def set_range(%ContinuousLinearScale{} = scale, {start, finish})
-        when is_number(start) and is_number(finish),
-        do: set_range(scale, start, finish)
+    def set_range(%ContinuousLinearScale{} = scale, {start, finish}) when is_number(start) and is_number(finish),
+      do: set_range(scale, start, finish)
 
     def get_formatted_tick(
-          %ContinuousLinearScale{
-            display_decimals: display_decimals,
-            custom_tick_formatter: custom_tick_formatter
-          },
+          %ContinuousLinearScale{display_decimals: display_decimals, custom_tick_formatter: custom_tick_formatter},
           tick_val
         ) do
       format_tick_text(tick_val, display_decimals, custom_tick_formatter)

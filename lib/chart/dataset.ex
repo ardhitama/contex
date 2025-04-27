@@ -124,8 +124,6 @@ defmodule Contex.Dataset do
   def column_index(%Dataset{data: [first_row | _rest]}, column_name) when is_map(first_row) do
     if Map.has_key?(first_row, column_name) do
       column_name
-    else
-      nil
     end
   end
 
@@ -153,12 +151,12 @@ defmodule Contex.Dataset do
 
   def column_names(%Dataset{data: [first_row | _]}) when is_tuple(first_row) do
     max = tuple_size(first_row) - 1
-    0..max |> Enum.into([])
+    Enum.to_list(0..max)
   end
 
   def column_names(%Dataset{data: [first_row | _]}) when is_list(first_row) do
     max = length(first_row) - 1
-    0..max |> Enum.into([])
+    Enum.to_list(0..max)
   end
 
   def column_names(%Dataset{headers: headers}), do: headers
@@ -171,9 +169,7 @@ defmodule Contex.Dataset do
   """
   @spec column_name(Contex.Dataset.t(), integer() | any) :: column_name()
   def column_name(%Dataset{headers: headers} = _dataset, column_index)
-      when is_list(headers) and
-             is_integer(column_index) and
-             column_index < length(headers) do
+      when is_list(headers) and is_integer(column_index) and column_index < length(headers) do
     # Maybe drop the length guard above and have it throw an exception
     Enum.at(headers, column_index)
   end
@@ -196,13 +192,11 @@ defmodule Contex.Dataset do
     "Hippo"
   """
   @spec value_fn(Contex.Dataset.t(), column_name()) :: (row() -> any)
-  def value_fn(%Dataset{data: [first_row | _]}, column_name)
-      when is_map(first_row) and is_binary(column_name) do
+  def value_fn(%Dataset{data: [first_row | _]}, column_name) when is_map(first_row) and is_binary(column_name) do
     fn row -> row[column_name] end
   end
 
-  def value_fn(%Dataset{data: [first_row | _]}, column_name)
-      when is_map(first_row) and is_atom(column_name) do
+  def value_fn(%Dataset{data: [first_row | _]}, column_name) when is_map(first_row) and is_atom(column_name) do
     fn row -> row[column_name] end
   end
 
@@ -299,9 +293,10 @@ defmodule Contex.Dataset do
       Enum.reduce(data, {[], MapSet.new()}, fn row, {result, found} ->
         val = accessor.(row)
 
-        case MapSet.member?(found, val) do
-          true -> {result, found}
-          _ -> {[val | result], MapSet.put(found, val)}
+        if MapSet.member?(found, val) do
+          {result, found}
+        else
+          {[val | result], MapSet.put(found, val)}
         end
       end)
 

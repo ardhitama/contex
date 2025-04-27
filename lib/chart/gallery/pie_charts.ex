@@ -1,6 +1,4 @@
 defmodule Contex.Gallery.PieCharts do
-  import Contex.Gallery.Sample, only: [graph: 1]
-
   @moduledoc """
   A gallery of Pie Charts.
 
@@ -14,6 +12,8 @@ defmodule Contex.Gallery.PieCharts do
 
   """
 
+  import Contex.Gallery.Sample, only: [graph: 1]
+
   @doc """
   Some plain pie charts.
 
@@ -25,5 +25,5 @@ defmodule Contex.Gallery.PieCharts do
   """)}
 
   """
-  def plain(), do: 0
+  def plain, do: 0
 end

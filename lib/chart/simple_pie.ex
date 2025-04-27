@@ -32,8 +32,7 @@ defmodule Contex.SimplePie do
   Create a new SimplePie struct from list of tuples.
   """
   @spec new([{String.t(), number()}]) :: t()
-  def new(data)
-      when is_list(data) do
+  def new(data) when is_list(data) do
     %SimplePie{
       data: data,
       scaled_values: data |> Enum.map(&elem(&1, 1)) |> scale_values(),
@@ -47,7 +46,7 @@ defmodule Contex.SimplePie do
   @spec colours(t(), CategoryColourScale.colour_palette()) :: t()
   def colours(%SimplePie{fill_colours: fill_colours} = pie, colours) do
     custom_fill_colours = CategoryColourScale.set_palette(fill_colours, colours)
-    %SimplePie{pie | fill_colours: custom_fill_colours}
+    %{pie | fill_colours: custom_fill_colours}
   end
 
   @doc """
@@ -65,15 +64,10 @@ defmodule Contex.SimplePie do
     {:safe, [output]}
   end
 
-  defp generate_slices(%SimplePie{
-         data: data,
-         scaled_values: scaled_values,
-         height: height,
-         fill_colours: fill_colours
-       }) do
+  defp generate_slices(%SimplePie{data: data, scaled_values: scaled_values, height: height, fill_colours: fill_colours}) do
     r = height / 2
     stroke_circumference = 2 * :math.pi() * r / 2
-    categories = data |> Enum.map(&elem(&1, 0))
+    categories = Enum.map(data, &elem(&1, 0))
 
     scaled_values
     |> Enum.zip(categories)

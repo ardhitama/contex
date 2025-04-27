@@ -1,7 +1,8 @@
 defmodule ContexTimeScaleTest do
   use ExUnit.Case
 
-  alias Contex.{Scale, TimeScale}
+  alias Contex.Scale
+  alias Contex.TimeScale
 
   defp create_timescale({d_min, d_max} = _domain, {r_min, r_max} = _range) do
     TimeScale.new()
@@ -10,7 +11,8 @@ defmodule ContexTimeScaleTest do
   end
 
   defp asset_datetimelists_equal(list1, list2) do
-    Enum.zip(list1, list2)
+    list1
+    |> Enum.zip(list2)
     |> Enum.each(fn {dt1, dt2} ->
       assert NaiveDateTime.compare(dt1, dt2) == :eq
     end)

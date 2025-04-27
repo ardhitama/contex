@@ -39,62 +39,65 @@ defmodule ContinuousLogScaleTest do
     test "mode :mask, no linear" do
       f = fn v -> ContinuousLogScale.log_value(v, &:math.log2/1, :mask, nil) end
 
-      [
-        {"Negative", -3, 0},
-        {"Zero", 0, 0},
-        {"Positive A", 2, 1},
-        {"Positive B", 8, 3}
-      ]
-      |> Enum.map(fn c -> test_case(f, c) end)
+      Enum.map(
+        [
+          {"Negative", -3, 0},
+          {"Zero", 0, 0},
+          {"Positive A", 2, 1},
+          {"Positive B", 8, 3}
+        ],
+        fn c -> test_case(f, c) end
+      )
     end
 
     test "mode :mask, linear part" do
       f = fn v -> ContinuousLogScale.log_value(v, &:math.log2/1, :mask, 1.0) end
 
-      [
-        {"Negative, outside linear", -3, 0},
-        {"Negative, within linear", -0.5, 0},
-        {"Zero", 0, 0},
-        {"Positive, within linear", 0.3, 0.3},
-        {"Positive, outside linear", 2, 1}
-      ]
-      |> Enum.map(fn c -> test_case(f, c) end)
+      Enum.map(
+        [
+          {"Negative, outside linear", -3, 0},
+          {"Negative, within linear", -0.5, 0},
+          {"Zero", 0, 0},
+          {"Positive, within linear", 0.3, 0.3},
+          {"Positive, outside linear", 2, 1}
+        ],
+        fn c -> test_case(f, c) end
+      )
     end
 
     test "mode :sym, no linear" do
       f = fn v -> ContinuousLogScale.log_value(v, &:math.log2/1, :sym, nil) end
 
-      [
-        {"Negative A", -8, -3},
-        {"Negative B", -2, -1},
-        {"Zero", 0, 0},
-        {"Positive A", 2, 1},
-        {"Positive B", 8, 3}
-      ]
-      |> Enum.map(fn c -> test_case(f, c) end)
+      Enum.map(
+        [
+          {"Negative A", -8, -3},
+          {"Negative B", -2, -1},
+          {"Zero", 0, 0},
+          {"Positive A", 2, 1},
+          {"Positive B", 8, 3}
+        ],
+        fn c -> test_case(f, c) end
+      )
     end
 
     test "mode :sym, linear part" do
       f = fn v -> ContinuousLogScale.log_value(v, &:math.log2/1, :sym, 1.0) end
 
-      [
-        {"Negative, outside linear", -8, -3},
-        {"Negative, within linear", -0.5, -0.5},
-        {"Zero", 0, 0},
-        {"Positive, within linear", 0.3, 0.3},
-        {"Positive, outside linear", 2, 1}
-      ]
-      |> Enum.map(fn c -> test_case(f, c) end)
+      Enum.map(
+        [
+          {"Negative, outside linear", -8, -3},
+          {"Negative, within linear", -0.5, -0.5},
+          {"Zero", 0, 0},
+          {"Positive, within linear", 0.3, 0.3},
+          {"Positive, outside linear", 2, 1}
+        ],
+        fn c -> test_case(f, c) end
+      )
     end
   end
 
   describe "Get extents out of a dataset" do
-    def ds(),
-      do:
-        Dataset.new(
-          [{"a", 10, 5}, {"b", 20, 10}, {"c", 3, 7}],
-          ["x", "y1", "y2"]
-        )
+    def ds, do: Dataset.new([{"a", 10, 5}, {"b", 20, 10}, {"c", 3, 7}], ["x", "y1", "y2"])
 
     test "Explicit domain" do
       assert {7, 9} = ContinuousLogScale.get_domain({7, 9}, ds(), "x")

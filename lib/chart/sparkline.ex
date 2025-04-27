@@ -26,7 +26,8 @@ defmodule Contex.Sparkline do
   `:height` and `:width` directly in the `Sparkline` struct before call `draw/1`.
   """
   alias __MODULE__
-  alias Contex.{ContinuousLinearScale, Scale}
+  alias Contex.ContinuousLinearScale
+  alias Contex.Scale
 
   defstruct [
     :data,
@@ -49,8 +50,7 @@ defmodule Contex.Sparkline do
   """
   @spec new([number()]) :: Contex.Sparkline.t()
   def new(data) when is_list(data) do
-    %Sparkline{data: data, extents: ContinuousLinearScale.extents(data), length: length(data)}
-    |> set_default_style
+    set_default_style(%Sparkline{data: data, extents: ContinuousLinearScale.extents(data), length: length(data)})
   end
 
   @doc """
@@ -133,9 +133,10 @@ defmodule Contex.Sparkline do
       |> Enum.map(transform_func)
       |> Enum.with_index()
       |> Enum.map(fn {value, i} ->
-        case i < last_item do
-          true -> "#{i} #{value} L "
-          _ -> "#{i} #{value}"
+        if i < last_item do
+          "#{i} #{value} L "
+        else
+          "#{i} #{value}"
         end
       end)
     ]

@@ -1,15 +1,18 @@
 defmodule ContexAxisTest do
   use ExUnit.Case
 
-  alias Contex.{Axis, ContinuousLinearScale}
   import SweetXml
+
+  alias Contex.Axis
+  alias Contex.ContinuousLinearScale
 
   # TODO: This is a bit brittle - most of the axis calculations are in float which is imprecise
   # String representations in the output may not line up depending on how the floats
   # are calculated on the day
 
   defp axis_map(axis) do
-    Axis.to_svg(axis)
+    axis
+    |> Axis.to_svg()
     |> IO.chardata_to_string()
     |> xpath(~x"/g",
       transform: ~x"./@transform"s,
@@ -138,15 +141,18 @@ defmodule ContexAxisTest do
                "(0, 1.4)",
                "(0, 1.5)"
              ] ==
-               Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> Map.get(tick, :transform) end)
                |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["6"] ==
-               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :x2]) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> get_in(tick, [:line, :x2]) end)
                |> Enum.uniq()
 
       assert ["0.32em"] ==
-               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> get_in(tick, [:text, :dy]) end)
                |> Enum.uniq()
 
       assert [
@@ -202,15 +208,18 @@ defmodule ContexAxisTest do
                "(1.4,0)",
                "(1.5,0)"
              ] ==
-               Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> Map.get(tick, :transform) end)
                |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["6"] ==
-               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :y2]) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> get_in(tick, [:line, :y2]) end)
                |> Enum.uniq()
 
       assert ["0.71em"] ==
-               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> get_in(tick, [:text, :dy]) end)
                |> Enum.uniq()
 
       assert [
@@ -268,15 +277,18 @@ defmodule ContexAxisTest do
                "(1.4,0)",
                "(1.5,0)"
              ] ==
-               Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> Map.get(tick, :transform) end)
                |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["-6"] ==
-               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :y2]) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> get_in(tick, [:line, :y2]) end)
                |> Enum.uniq()
 
       assert [""] ==
-               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> get_in(tick, [:text, :dy]) end)
                |> Enum.uniq()
 
       assert [
@@ -332,15 +344,18 @@ defmodule ContexAxisTest do
                "(0, 1.4)",
                "(0, 1.5)"
              ] ==
-               Enum.map(axis_map.ticks, fn tick -> Map.get(tick, :transform) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> Map.get(tick, :transform) end)
                |> Enum.map(fn tick -> String.trim_leading(tick, "translate") end)
 
       assert ["-6"] ==
-               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:line, :x2]) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> get_in(tick, [:line, :x2]) end)
                |> Enum.uniq()
 
       assert ["0.32em"] ==
-               Enum.map(axis_map.ticks, fn tick -> get_in(tick, [:text, :dy]) end)
+               axis_map.ticks
+               |> Enum.map(fn tick -> get_in(tick, [:text, :dy]) end)
                |> Enum.uniq()
 
       assert [

@@ -34,9 +34,12 @@ defmodule Contex.OHLC do
   import Extructure
 
   alias __MODULE__
-  alias Contex.{Scale, ContinuousLinearScale, TimeScale}
-  alias Contex.{Dataset, Mapping}
   alias Contex.Axis
+  alias Contex.ContinuousLinearScale
+  alias Contex.Dataset
+  alias Contex.Mapping
+  alias Contex.Scale
+  alias Contex.TimeScale
   alias Contex.Utils
 
   defstruct [
@@ -176,14 +179,16 @@ defmodule Contex.OHLC do
     x_axis_svg =
       if plot_options.show_x_axis,
         do:
-          get_x_axis(x_scale, plot)
+          x_scale
+          |> get_x_axis(plot)
           |> Axis.to_svg(),
         else: ""
 
     y_axis_svg =
       if plot_options.show_y_axis,
         do:
-          Axis.new_left_axis(y_scale)
+          y_scale
+          |> Axis.new_left_axis()
           |> Axis.set_offset(get_option(plot, :width))
           |> Axis.to_svg(),
         else: ""
@@ -201,8 +206,7 @@ defmodule Contex.OHLC do
   defp render_data(plot) do
     [dataset] <~ plot
 
-    dataset.data
-    |> Enum.map(fn row -> render_row(plot, row) end)
+    Enum.map(dataset.data, fn row -> render_row(plot, row) end)
   end
 
   @spec render_row(t(), row()) :: rendered_row()
@@ -210,7 +214,8 @@ defmodule Contex.OHLC do
     [transforms, mapping: [accessors], options: options = %{}] <~ plot
 
     x =
-      accessors.datetime.(row)
+      row
+      |> accessors.datetime.()
       |> transforms.x.()
 
     y_vals = get_y_vals(row, accessors)
@@ -239,19 +244,12 @@ defmodule Contex.OHLC do
     bar_x = {x - body_width, x + body_width}
 
     body_opts =
-      [
-        fill: body_color,
-        stroke: body_border && shadow_color,
-        shape_rendering: crisp_edges && "crispEdges"
-      ]
-      |> Enum.filter(&elem(&1, 1))
+      Enum.filter(
+        [fill: body_color, stroke: body_border && shadow_color, shape_rendering: crisp_edges && "crispEdges"],
+        &elem(&1, 1)
+      )
 
-    style =
-      [
-        ~s|style="stroke: ##{shadow_color}"|,
-        (crisp_edges && ~s| shape-rendering="crispEdges"|) || ""
-      ]
-      |> Enum.join()
+    style = Enum.join([~s|style="stroke: ##{shadow_color}"|, (crisp_edges && ~s| shape-rendering="crispEdges"|) || ""])
 
     [
       ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
@@ -265,11 +263,10 @@ defmodule Contex.OHLC do
     [open, high, low, close] <~ y_map
 
     style =
-      [
+      Enum.join([
         ~s|style="stroke: ##{(colorized_bars && body_color) || shadow_color}"|,
         (crisp_edges && ~s| shape-rendering="crispEdges"|) || ""
-      ]
-      |> Enum.join()
+      ])
 
     [
       ~s|<line x1="#{x}" x2="#{x}" y1="#{low}" y2="#{high}" #{style} />|,
@@ -280,13 +277,11 @@ defmodule Contex.OHLC do
 
   @spec get_y_vals(row(), %{atom() => (row() -> number())}) :: y_vals()
   defp get_y_vals(row, accessors) do
-    [:open, :high, :low, :close]
-    |> Enum.map(fn col ->
+    Map.new([:open, :high, :low, :close], fn col ->
       y = accessors[col].(row)
 
       {col, y}
     end)
-    |> Enum.into(%{})
   end
 
   @spec get_colour(y_vals(), t()) :: color()
@@ -334,12 +329,12 @@ defmodule Contex.OHLC do
     x_scale =
       case custom_x_scale do
         nil -> create_timescale_for_column(dataset, x_col_name, {0, width})
-        _ -> custom_x_scale |> Scale.set_range(0, width)
+        _ -> Scale.set_range(custom_x_scale, 0, width)
       end
 
     x_scale = %{x_scale | custom_tick_formatter: get_option(plot, :custom_x_formatter)}
     x_transform = Scale.domain_to_range_fn(x_scale)
-    transforms = Map.merge(plot.transforms, %{x: x_transform})
+    transforms = Map.put(plot.transforms, :x, x_transform)
 
     %{plot | x_scale: x_scale, transforms: transforms}
   end
@@ -364,7 +359,8 @@ defmodule Contex.OHLC do
       case custom_y_scale do
         nil ->
           {min, max} =
-            get_overall_domain(dataset, y_col_names)
+            dataset
+            |> get_overall_domain(y_col_names)
             |> Utils.fixup_value_range()
 
           ContinuousLinearScale.new()
@@ -372,12 +368,12 @@ defmodule Contex.OHLC do
           |> Scale.set_range(height, 0)
 
         _ ->
-          custom_y_scale |> Scale.set_range(height, 0)
+          Scale.set_range(custom_y_scale, height, 0)
       end
 
     y_scale = %{y_scale | custom_tick_formatter: get_option(plot, :custom_y_formatter)}
     y_transform = Scale.domain_to_range_fn(y_scale)
-    transforms = Map.merge(plot.transforms, %{y: y_transform})
+    transforms = Map.put(plot.transforms, :y, y_transform)
 
     %{plot | y_scale: y_scale, transforms: transforms}
   end

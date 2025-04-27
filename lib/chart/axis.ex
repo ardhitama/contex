@@ -180,14 +180,12 @@ defmodule Contex.Axis do
     end
   end
 
-  defp get_svg_axis_line(%Axis{orientation: orientation} = axis, range0, range1)
-       when orientation in [:right, :left] do
+  defp get_svg_axis_line(%Axis{orientation: orientation} = axis, range0, range1) when orientation in [:right, :left] do
     %Axis{tick_size_outer: tick_size_outer, flip_factor: k} = axis
     ~s|M#{k * tick_size_outer},#{range0}H0.5V#{range1}H#{k * tick_size_outer}|
   end
 
-  defp get_svg_axis_line(%Axis{orientation: orientation} = axis, range0, range1)
-       when orientation in [:top, :bottom] do
+  defp get_svg_axis_line(%Axis{orientation: orientation} = axis, range0, range1) when orientation in [:top, :bottom] do
     %Axis{tick_size_outer: tick_size_outer, flip_factor: k} = axis
     ~s|M#{range0}, #{k * tick_size_outer}V0.5H#{range1}V#{k * tick_size_outer}|
   end
@@ -196,8 +194,7 @@ defmodule Contex.Axis do
     domain_ticks = Scale.ticks_domain(scale)
     domain_to_range_fn = Scale.domain_to_range_fn(scale)
 
-    domain_ticks
-    |> Enum.map(fn tick -> get_svg_tick(axis, tick, domain_to_range_fn.(tick)) end)
+    Enum.map(domain_ticks, fn tick -> get_svg_tick(axis, tick, domain_to_range_fn.(tick)) end)
   end
 
   defp get_svg_tick(%Axis{orientation: orientation} = axis, tick, range_tick) do
@@ -231,21 +228,18 @@ defmodule Contex.Axis do
     text_adjust = get_svg_tick_text_adjust(axis)
 
     tick =
-      Scale.get_formatted_tick(scale, tick)
+      scale
+      |> Scale.get_formatted_tick(tick)
       |> Contex.SVG.Sanitize.basic_sanitize()
 
     ~s|<text #{dim}="#{k * offset}" #{text_adjust}>#{tick}</text>|
   end
 
-  defp get_tick_dimension(%Axis{orientation: orientation}) when orientation in [:top, :bottom],
-    do: "y"
+  defp get_tick_dimension(%Axis{orientation: orientation}) when orientation in [:top, :bottom], do: "y"
 
-  defp get_tick_dimension(%Axis{orientation: orientation}) when orientation in [:left, :right],
-    do: "x"
+  defp get_tick_dimension(%Axis{orientation: orientation}) when orientation in [:left, :right], do: "x"
 
-  defp get_svg_tick_text_adjust(%Axis{orientation: orientation})
-       when orientation in [:left, :right],
-       do: ~s|dy="0.32em"|
+  defp get_svg_tick_text_adjust(%Axis{orientation: orientation}) when orientation in [:left, :right], do: ~s|dy="0.32em"|
 
   defp get_svg_tick_text_adjust(%Axis{orientation: :top}), do: ""
 

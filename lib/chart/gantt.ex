@@ -18,9 +18,13 @@ defmodule Contex.GanttChart do
   import Contex.SVG
 
   alias __MODULE__
-  alias Contex.{Scale, OrdinalScale, TimeScale, CategoryColourScale}
-  alias Contex.{Dataset, Mapping}
   alias Contex.Axis
+  alias Contex.CategoryColourScale
+  alias Contex.Dataset
+  alias Contex.Mapping
+  alias Contex.OrdinalScale
+  alias Contex.Scale
+  alias Contex.TimeScale
   alias Contex.Utils
 
   defstruct [
@@ -111,7 +115,8 @@ defmodule Contex.GanttChart do
   @deprecated "Default scales are now silently applied"
   @spec set_default_scales(Contex.GanttChart.t()) :: Contex.GanttChart.t()
   def set_default_scales(%GanttChart{mapping: %{column_map: column_map}} = plot) do
-    set_category_task_cols(plot, column_map.category_col, column_map.task_col)
+    plot
+    |> set_category_task_cols(column_map.category_col, column_map.task_col)
     |> set_task_interval_cols({column_map.start_col, column_map.finish_col})
   end
 
@@ -156,10 +161,7 @@ defmodule Contex.GanttChart do
           {Contex.Dataset.column_name(), Contex.Dataset.column_name()}
         ) ::
           Contex.GanttChart.t()
-  def set_task_interval_cols(
-        %GanttChart{mapping: mapping} = plot,
-        {start_col_name, finish_col_name}
-      ) do
+  def set_task_interval_cols(%GanttChart{mapping: mapping} = plot, {start_col_name, finish_col_name}) do
     mapping = Mapping.update(mapping, %{start_col: start_col_name, finish_col: finish_col_name})
 
     %{plot | mapping: mapping}
@@ -180,7 +182,8 @@ defmodule Contex.GanttChart do
     tasks = Dataset.unique_values(dataset, task_col_name)
 
     task_scale =
-      OrdinalScale.new(tasks)
+      tasks
+      |> OrdinalScale.new()
       |> Scale.set_range(0, height)
       |> OrdinalScale.padding(padding)
 
@@ -251,8 +254,8 @@ defmodule Contex.GanttChart do
     plot = prepare_scales(plot)
     time_scale = plot.time_scale
     height = get_option(plot, :height)
-    time_axis = Axis.new_bottom_axis(time_scale) |> Axis.set_offset(height)
-    toptime_axis = Axis.new_top_axis(time_scale) |> Axis.set_offset(height)
+    time_axis = time_scale |> Axis.new_bottom_axis() |> Axis.set_offset(height)
+    toptime_axis = time_scale |> Axis.new_top_axis() |> Axis.set_offset(height)
     toptime_axis = %{toptime_axis | tick_size_inner: 3, tick_padding: 1}
 
     [
@@ -266,14 +269,12 @@ defmodule Contex.GanttChart do
     ]
   end
 
-  defp get_category_rects_svg(
-         %GanttChart{mapping: mapping, dataset: dataset, category_scale: cat_scale} = plot
-       ) do
+  defp get_category_rects_svg(%GanttChart{mapping: mapping, dataset: dataset, category_scale: cat_scale} = plot) do
     categories = Dataset.unique_values(dataset, mapping.column_map.category_col)
 
     Enum.map(categories, fn cat ->
       fill = CategoryColourScale.colour_for_value(cat_scale, cat)
-      band = get_category_band(plot, cat) |> adjust_category_band()
+      band = plot |> get_category_band(cat) |> adjust_category_band()
       x_extents = {0, get_option(plot, :width)}
 
       # TODO: When we have a colour manipulation library we can fade the colour. Until then, we'll draw a transparent white box on top
@@ -300,18 +301,12 @@ defmodule Contex.GanttChart do
   end
 
   defp get_svg_bars(%GanttChart{dataset: dataset} = plot) do
-    dataset.data
-    |> Enum.map(fn row -> get_svg_bar(row, plot) end)
+    Enum.map(dataset.data, fn row -> get_svg_bar(row, plot) end)
   end
 
   defp get_svg_bar(
          row,
-         %GanttChart{
-           mapping: mapping,
-           task_scale: task_scale,
-           time_scale: time_scale,
-           category_scale: cat_scale
-         } = plot
+         %GanttChart{mapping: mapping, task_scale: task_scale, time_scale: time_scale, category_scale: cat_scale} = plot
        ) do
     task_data = mapping.accessors.task_col.(row)
     cat_data = mapping.accessors.category_col.(row)
@@ -333,21 +328,20 @@ defmodule Contex.GanttChart do
   end
 
   defp get_svg_bar_label(plot, {bar_start, bar_end} = bar, label, band) do
-    case get_option(plot, :show_task_labels) do
-      true ->
-        text_y = midpoint(band)
-        width = width(bar)
+    if get_option(plot, :show_task_labels) do
+      text_y = midpoint(band)
+      width = width(bar)
 
-        {text_x, class, anchor} =
-          case width < 50 do
-            true -> {bar_end + 2, "exc-barlabel-out", "start"}
-            _ -> {bar_start + 5, "exc-barlabel-in", "start"}
-          end
+      {text_x, class, anchor} =
+        if width < 50 do
+          {bar_end + 2, "exc-barlabel-out", "start"}
+        else
+          {bar_start + 5, "exc-barlabel-in", "start"}
+        end
 
-        text(text_x, text_y, label, anchor: anchor, dominant_baseline: "central", class: class)
-
-      _ ->
-        ""
+      text(text_x, text_y, label, anchor: anchor, dominant_baseline: "central", class: class)
+    else
+      ""
     end
   end
 
@@ -371,32 +365,17 @@ defmodule Contex.GanttChart do
     end
   end
 
-  defp get_bar_click_id(
-         _row,
-         %GanttChart{
-           mapping: %{column_map: %{id_col: nil}}
-         },
-         category,
-         task
-       ) do
+  defp get_bar_click_id(_row, %GanttChart{mapping: %{column_map: %{id_col: nil}}}, category, task) do
     [category: "#{category}", task: task]
   end
 
-  defp get_bar_click_id(
-         row,
-         %GanttChart{mapping: mapping},
-         _category,
-         _task
-       ) do
+  defp get_bar_click_id(row, %GanttChart{mapping: mapping}, _category, _task) do
     id = mapping.accessors.id_col.(row)
 
     [id: "#{id}"]
   end
 
-  defp get_category_band(
-         %GanttChart{mapping: mapping, task_scale: task_scale, dataset: dataset},
-         category
-       ) do
+  defp get_category_band(%GanttChart{mapping: mapping, task_scale: task_scale, dataset: dataset}, category) do
     Enum.reduce(dataset.data, {nil, nil}, fn row, {min, max} = acc ->
       task = mapping.accessors.task_col.(row)
       cat = mapping.accessors.category_col.(row)

@@ -26,10 +26,13 @@ defmodule Contex.BarChart do
   import Contex.SVG
 
   alias __MODULE__
-  alias Contex.{Scale, ContinuousLinearScale, OrdinalScale}
-  alias Contex.CategoryColourScale
-  alias Contex.{Dataset, Mapping}
   alias Contex.Axis
+  alias Contex.CategoryColourScale
+  alias Contex.ContinuousLinearScale
+  alias Contex.Dataset
+  alias Contex.Mapping
+  alias Contex.OrdinalScale
+  alias Contex.Scale
   alias Contex.Utils
 
   defstruct [
@@ -164,7 +167,8 @@ defmodule Contex.BarChart do
   @deprecated "Default scales are now silently applied"
   @spec set_default_scales(Contex.BarChart.t()) :: Contex.BarChart.t()
   def set_default_scales(%BarChart{mapping: %{column_map: column_map}} = plot) do
-    set_cat_col_name(plot, column_map.category_col)
+    plot
+    |> set_cat_col_name(column_map.category_col)
     |> set_val_col_names(column_map.value_cols)
   end
 
@@ -202,8 +206,7 @@ defmodule Contex.BarChart do
   @deprecated "Use the `:custom_value_scale` option in `new/2`"
   def force_value_range(%BarChart{mapping: mapping} = plot, {min, max} = value_range)
       when is_number(min) and is_number(max) do
-    %{plot | value_range: value_range}
-    |> set_val_col_names(mapping.column_map.value_cols)
+    set_val_col_names(%{plot | value_range: value_range}, mapping.column_map.value_cols)
   end
 
   @doc false
@@ -367,19 +370,13 @@ defmodule Contex.BarChart do
   end
 
   defp refine_options(options, :horizontal),
-    do:
-      options
-      |> Map.put(:show_cat_axis, options.show_y_axis)
-      |> Map.put(:show_val_axis, options.show_x_axis)
+    do: options |> Map.put(:show_cat_axis, options.show_y_axis) |> Map.put(:show_val_axis, options.show_x_axis)
 
   defp refine_options(options, _),
-    do:
-      options
-      |> Map.put(:show_cat_axis, options.show_x_axis)
-      |> Map.put(:show_val_axis, options.show_y_axis)
+    do: options |> Map.put(:show_cat_axis, options.show_x_axis) |> Map.put(:show_val_axis, options.show_y_axis)
 
   defp get_category_axis(category_scale, :horizontal, plot) do
-    Axis.new_left_axis(category_scale) |> Axis.set_offset(get_option(plot, :width))
+    category_scale |> Axis.new_left_axis() |> Axis.set_offset(get_option(plot, :width))
   end
 
   defp get_category_axis(category_scale, _, plot) do
@@ -399,10 +396,10 @@ defmodule Contex.BarChart do
   end
 
   defp get_value_axis(value_scale, :horizontal, plot),
-    do: Axis.new_bottom_axis(value_scale) |> Axis.set_offset(get_option(plot, :height))
+    do: value_scale |> Axis.new_bottom_axis() |> Axis.set_offset(get_option(plot, :height))
 
   defp get_value_axis(value_scale, _, plot),
-    do: Axis.new_left_axis(value_scale) |> Axis.set_offset(get_option(plot, :width))
+    do: value_scale |> Axis.new_left_axis() |> Axis.set_offset(get_option(plot, :width))
 
   defp get_svg_bars(%BarChart{mapping: %{column_map: column_map}, dataset: dataset} = plot) do
     series_fill_colours = plot.series_fill_colours
@@ -412,14 +409,12 @@ defmodule Contex.BarChart do
         CategoryColourScale.colour_for_value(series_fill_colours, column)
       end)
 
-    dataset.data
-    |> Enum.map(fn row -> get_svg_bar(row, plot, fills) end)
+    Enum.map(dataset.data, fn row -> get_svg_bar(row, plot, fills) end)
   end
 
   defp get_svg_bar(
          row,
-         %BarChart{mapping: mapping, category_scale: category_scale, value_scale: value_scale} =
-           plot,
+         %BarChart{mapping: mapping, category_scale: category_scale, value_scale: value_scale} = plot,
          fills
        ) do
     cat_data = mapping.accessors.category_col.(row)
@@ -453,7 +448,8 @@ defmodule Contex.BarChart do
         Enum.map(mapping.column_map.value_cols, fn _ -> [] end)
 
       _ ->
-        Enum.zip(mapping.column_map.value_cols, series_values)
+        mapping.column_map.value_cols
+        |> Enum.zip(series_values)
         |> Enum.map(fn {col, value} ->
           Keyword.merge(base_opts, category: category, series: col, value: value)
         end)
@@ -462,10 +458,7 @@ defmodule Contex.BarChart do
 
   @bar_faded_opacity "0.3"
   defp get_bar_opacities(
-         %BarChart{
-           select_item: %{category: selected_category, series: _selected_series},
-           mapping: mapping
-         },
+         %BarChart{select_item: %{category: selected_category, series: _selected_series}, mapping: mapping},
          category
        )
        when selected_category != category do
@@ -473,16 +466,14 @@ defmodule Contex.BarChart do
   end
 
   defp get_bar_opacities(
-         %BarChart{
-           select_item: %{category: _selected_category, series: selected_series},
-           mapping: mapping
-         },
+         %BarChart{select_item: %{category: _selected_category, series: selected_series}, mapping: mapping},
          _category
        ) do
     Enum.map(mapping.column_map.value_cols, fn col ->
-      case col == selected_series do
-        true -> ""
-        _ -> @bar_faded_opacity
+      if col == selected_series do
+        ""
+      else
+        @bar_faded_opacity
       end
     end)
   end
@@ -536,7 +527,8 @@ defmodule Contex.BarChart do
       end)
 
     rects =
-      Enum.zip([bar_values, fills, labels, adjusted_bands, event_handlers, opacities])
+      [bar_values, fills, labels, adjusted_bands, event_handlers, opacities]
+      |> Enum.zip()
       |> Enum.map(fn {bar_value, fill, label, adjusted_band, event_opts, opacity} ->
         {x, y} = get_bar_rect_coords(orientation, adjusted_band, bar_value)
         opts = [fill: fill, opacity: opacity] ++ event_opts
@@ -549,7 +541,8 @@ defmodule Contex.BarChart do
           []
 
         _ ->
-          Enum.zip([bar_values, labels, adjusted_bands])
+          [bar_values, labels, adjusted_bands]
+          |> Enum.zip()
           |> Enum.map(fn {bar_value, label, adjusted_band} ->
             get_svg_bar_label(orientation, bar_value, label, adjusted_band, plot)
           end)
@@ -583,9 +576,10 @@ defmodule Contex.BarChart do
     width = width(bar)
 
     {text_x, class, anchor} =
-      case width < 50 do
-        true -> {bar_end + 2, "exc-barlabel-out", "start"}
-        _ -> {midpoint(bar), "exc-barlabel-in", "middle"}
+      if width < 50 do
+        {bar_end + 2, "exc-barlabel-out", "start"}
+      else
+        {midpoint(bar), "exc-barlabel-in", "middle"}
       end
 
     text(text_x, text_y, label, text_anchor: anchor, class: class, dominant_baseline: "central")
@@ -595,9 +589,10 @@ defmodule Contex.BarChart do
     text_x = midpoint(cat_band)
 
     {text_y, class} =
-      case width(bar) > 20 do
-        true -> {midpoint(bar), "exc-barlabel-in"}
-        _ -> {bar_start - 10, "exc-barlabel-out"}
+      if width(bar) > 20 do
+        {midpoint(bar), "exc-barlabel-in"}
+      else
+        {bar_start - 10, "exc-barlabel-out"}
       end
 
     text(text_x, text_y, label, text_anchor: "middle", class: class)
@@ -621,8 +616,7 @@ defmodule Contex.BarChart do
   This provides the value for each bar.
   """
   @deprecated "Use `:mapping` option in `new/2`"
-  def set_val_col_names(%BarChart{mapping: mapping} = plot, val_col_names)
-      when is_list(val_col_names) do
+  def set_val_col_names(%BarChart{mapping: mapping} = plot, val_col_names) when is_list(val_col_names) do
     mapping = Mapping.update(mapping, %{value_cols: val_col_names})
 
     %{plot | mapping: mapping}
@@ -637,9 +631,7 @@ defmodule Contex.BarChart do
     |> prepare_colour_scale()
   end
 
-  defp prepare_category_scale(
-         %BarChart{dataset: dataset, options: options, mapping: mapping} = plot
-       ) do
+  defp prepare_category_scale(%BarChart{dataset: dataset, options: options, mapping: mapping} = plot) do
     padding = Keyword.get(options, :padding, 2)
 
     cat_col_name = mapping.column_map[:category_col]
@@ -647,7 +639,8 @@ defmodule Contex.BarChart do
     {r_min, r_max} = get_range(:category, plot)
 
     cat_scale =
-      OrdinalScale.new(categories)
+      categories
+      |> OrdinalScale.new()
       |> Scale.set_range(r_min, r_max)
       |> OrdinalScale.padding(padding)
 
@@ -662,7 +655,8 @@ defmodule Contex.BarChart do
       case custom_value_scale do
         nil ->
           {min, max} =
-            get_overall_value_domain(plot, dataset, val_col_names, get_option(plot, :type))
+            plot
+            |> get_overall_value_domain(dataset, val_col_names, get_option(plot, :type))
             |> Utils.fixup_value_range()
 
           ContinuousLinearScale.new()
@@ -683,7 +677,8 @@ defmodule Contex.BarChart do
     val_col_names = mapping.column_map[:value_cols]
 
     series_fill_colours =
-      CategoryColourScale.new(val_col_names)
+      val_col_names
+      |> CategoryColourScale.new()
       |> CategoryColourScale.set_palette(get_option(plot, :colour_palette))
 
     %{plot | series_fill_colours: series_fill_colours, mapping: mapping}

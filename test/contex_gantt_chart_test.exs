@@ -1,20 +1,21 @@
 defmodule ContexGanttChartTest do
   use ExUnit.Case
 
-  alias Contex.{Dataset, GanttChart, Plot}
   import SweetXml
+
+  alias Contex.Dataset
+  alias Contex.GanttChart
+  alias Contex.Plot
 
   setup do
     plot =
-      Dataset.new(
-        [
-          {"Category 1", "Task 1", ~N{2019-10-01 10:00:00}, ~N{2019-10-02 10:00:00}, "1_1"},
-          {"Category 1", "Task 2", ~N{2019-10-02 10:00:00}, ~N{2019-10-04 10:00:00}, "1_2"},
-          {"Category 2", "Task 3", ~N{2019-10-04 10:00:00}, ~N{2019-10-05 10:00:00}, "2_3"},
-          {"Category 2", "Task 4", ~N{2019-10-06 10:00:00}, ~N{2019-10-08 10:00:00}, "2_4"}
-        ],
-        ["Category", "Task", "Start", "End", "Task ID"]
-      )
+      [
+        {"Category 1", "Task 1", ~N{2019-10-01 10:00:00}, ~N{2019-10-02 10:00:00}, "1_1"},
+        {"Category 1", "Task 2", ~N{2019-10-02 10:00:00}, ~N{2019-10-04 10:00:00}, "1_2"},
+        {"Category 2", "Task 3", ~N{2019-10-04 10:00:00}, ~N{2019-10-05 10:00:00}, "2_3"},
+        {"Category 2", "Task 4", ~N{2019-10-06 10:00:00}, ~N{2019-10-08 10:00:00}, "2_4"}
+      ]
+      |> Dataset.new(["Category", "Task", "Start", "End", "Task ID"])
       |> GanttChart.new()
 
     dataset_maps =
@@ -62,14 +63,8 @@ defmodule ContexGanttChartTest do
       dataset_maps: dataset_maps
     } do
       plot =
-        dataset_maps
-        |> GanttChart.new(
-          mapping: %{
-            category_col: :category,
-            task_col: :task,
-            start_col: :start,
-            finish_col: :finish
-          }
+        GanttChart.new(dataset_maps,
+          mapping: %{category_col: :category, task_col: :task, start_col: :start, finish_col: :finish}
         )
 
       assert get_option(plot, :padding) == 2
@@ -84,7 +79,7 @@ defmodule ContexGanttChartTest do
     test "Raises if invalid column map is passed with map data", %{dataset_maps: dataset_maps} do
       assert_raise(
         RuntimeError,
-        "Required mapping(s) \"category_col\", \"finish_col\", \"start_col\", \"task_col\" not included in column map.",
+        ~s{Required mapping(s) "category_col", "finish_col", "start_col", "task_col" not included in column map.},
         fn -> GanttChart.new(dataset_maps, mapping: %{x_col: :category}) end
       )
     end
@@ -167,7 +162,8 @@ defmodule ContexGanttChartTest do
 
   describe "to_svg/1" do
     defp plot_iodata_to_map(plot_iodata) do
-      IO.chardata_to_string(plot_iodata)
+      plot_iodata
+      |> IO.chardata_to_string()
       |> xpath(~x"/svg/g/g/rect"l,
         x: ~x"./@x"s,
         y: ~x"./@y"s,
@@ -177,7 +173,8 @@ defmodule ContexGanttChartTest do
     end
 
     defp label_iodata_to_map(plot_iodata) do
-      IO.chardata_to_string(plot_iodata)
+      plot_iodata
+      |> IO.chardata_to_string()
       |> xpath(~x"/svg/g/g[not(@class)]/text"l,
         label: ~x"./text()"s
       )
@@ -187,13 +184,15 @@ defmodule ContexGanttChartTest do
     # by Contex.Axis and Context.Legend, tested separately
     test "returns properly constructed chart", %{plot: plot} do
       rects_map =
-        Plot.new(200, 200, plot)
+        200
+        |> Plot.new(200, plot)
         |> Plot.to_svg()
         |> elem(1)
         |> plot_iodata_to_map()
 
       string_to_rounded_float = fn value ->
-        Float.parse(value)
+        value
+        |> Float.parse()
         |> elem(0)
         |> Float.round(3)
       end
@@ -204,7 +203,8 @@ defmodule ContexGanttChartTest do
                [28.0, 15.0, 51.25, 61.0],
                [28.0, 30.0, 81.25, 91.0]
              ] ==
-               Stream.map(rects_map, &Enum.unzip/1)
+               rects_map
+               |> Stream.map(&Enum.unzip/1)
                |> Stream.map(fn value ->
                  elem(value, 1)
                end)
@@ -213,7 +213,8 @@ defmodule ContexGanttChartTest do
                end)
 
       labels =
-        Plot.new(200, 200, plot)
+        200
+        |> Plot.new(200, plot)
         |> Plot.to_svg()
         |> elem(1)
         |> label_iodata_to_map()

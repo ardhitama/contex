@@ -1,7 +1,9 @@
 defmodule ContexMappingTest do
   use ExUnit.Case
 
-  alias Contex.{Mapping, Dataset, PointPlot}
+  alias Contex.Dataset
+  alias Contex.Mapping
+  alias Contex.PointPlot
 
   setup do
     maps_data = Dataset.new([%{y: 1, x: 2, z: 5}, %{x: 3, y: 4, z: 6}])
@@ -111,7 +113,8 @@ defmodule ContexMappingTest do
 
   test "updates the column map and accessors", plot_with do
     mapping =
-      Mapping.new(plot_with.required_columns, %{x_col: :x, y_cols: [:y]}, plot_with.maps_data)
+      plot_with.required_columns
+      |> Mapping.new(%{x_col: :x, y_cols: [:y]}, plot_with.maps_data)
       |> Mapping.update(%{x_col: :z, fill_col: :x})
 
     assert mapping.column_map == %{x_col: :z, y_cols: [:y], fill_col: :x}

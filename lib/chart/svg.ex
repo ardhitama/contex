@@ -112,8 +112,7 @@ defmodule Contex.SVG do
     initial_window = {nil, nil, nil, nil}
 
     {_, window, last_p, result} =
-      Enum.reduce(points, {:first, initial_window, nil, ""}, fn p,
-                                                                {step, window, last_p, result} ->
+      Enum.reduce(points, {:first, initial_window, nil, ""}, fn p, {step, window, last_p, result} ->
         case step do
           :first ->
             {:second, {p, p, p, p}, p, []}
@@ -157,11 +156,9 @@ defmodule Contex.SVG do
   defp opts_to_attrs([{_, nil} | t], attrs), do: opts_to_attrs(t, attrs)
   defp opts_to_attrs([{_, ""} | t], attrs), do: opts_to_attrs(t, attrs)
 
-  defp opts_to_attrs([{:phx_click, val} | t], attrs),
-    do: opts_to_attrs(t, [[" phx-click=\"", val, "\""] | attrs])
+  defp opts_to_attrs([{:phx_click, val} | t], attrs), do: opts_to_attrs(t, [[" phx-click=\"", val, "\""] | attrs])
 
-  defp opts_to_attrs([{:phx_target, val} | t], attrs),
-    do: opts_to_attrs(t, [[" phx-target=\"", val, "\""] | attrs])
+  defp opts_to_attrs([{:phx_target, val} | t], attrs), do: opts_to_attrs(t, [[" phx-target=\"", val, "\""] | attrs])
 
   defp opts_to_attrs([{:series, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-value-series=\"", "#{clean(val)}", "\""] | attrs])
@@ -172,39 +169,30 @@ defmodule Contex.SVG do
   defp opts_to_attrs([{:value, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-value-value=\"", "#{clean(val)}", "\""] | attrs])
 
-  defp opts_to_attrs([{:id, val} | t], attrs),
-    do: opts_to_attrs(t, [[" phx-value-id=\"", "#{val}", "\""] | attrs])
+  defp opts_to_attrs([{:id, val} | t], attrs), do: opts_to_attrs(t, [[" phx-value-id=\"", "#{val}", "\""] | attrs])
 
   defp opts_to_attrs([{:task, val} | t], attrs),
     do: opts_to_attrs(t, [[" phx-value-task=\"", "#{clean(val)}", "\""] | attrs])
 
   # TODO: This is going to break down with more complex styles
-  defp opts_to_attrs([{:fill, val} | t], attrs),
-    do: opts_to_attrs(t, [[" style=\"fill:#", val, ";\""] | attrs])
+  defp opts_to_attrs([{:fill, val} | t], attrs), do: opts_to_attrs(t, [[" style=\"fill:#", val, ";\""] | attrs])
 
-  defp opts_to_attrs([{:transparent, true} | t], attrs),
-    do: opts_to_attrs(t, [[" fill=\"transparent\""] | attrs])
+  defp opts_to_attrs([{:transparent, true} | t], attrs), do: opts_to_attrs(t, [[" fill=\"transparent\""] | attrs])
 
-  defp opts_to_attrs([{:stroke, val} | t], attrs),
-    do: opts_to_attrs(t, [[" stroke=\"#", val, "\""] | attrs])
+  defp opts_to_attrs([{:stroke, val} | t], attrs), do: opts_to_attrs(t, [[" stroke=\"#", val, "\""] | attrs])
 
-  defp opts_to_attrs([{:stroke_width, val} | t], attrs),
-    do: opts_to_attrs(t, [[" stroke-width=\"", val, "\""] | attrs])
+  defp opts_to_attrs([{:stroke_width, val} | t], attrs), do: opts_to_attrs(t, [[" stroke-width=\"", val, "\""] | attrs])
 
   defp opts_to_attrs([{:stroke_linejoin, val} | t], attrs),
     do: opts_to_attrs(t, [[" stroke-linejoin=\"", val, "\""] | attrs])
 
-  defp opts_to_attrs([{:opacity, val} | t], attrs),
-    do: opts_to_attrs(t, [[" fill-opacity=\"", val, "\""] | attrs])
+  defp opts_to_attrs([{:opacity, val} | t], attrs), do: opts_to_attrs(t, [[" fill-opacity=\"", val, "\""] | attrs])
 
-  defp opts_to_attrs([{:class, val} | t], attrs),
-    do: opts_to_attrs(t, [[" class=\"", val, "\""] | attrs])
+  defp opts_to_attrs([{:class, val} | t], attrs), do: opts_to_attrs(t, [[" class=\"", val, "\""] | attrs])
 
-  defp opts_to_attrs([{:transform, val} | t], attrs),
-    do: opts_to_attrs(t, [[" transform=\"", val, "\""] | attrs])
+  defp opts_to_attrs([{:transform, val} | t], attrs), do: opts_to_attrs(t, [[" transform=\"", val, "\""] | attrs])
 
-  defp opts_to_attrs([{:text_anchor, val} | t], attrs),
-    do: opts_to_attrs(t, [[" text-anchor=\"", val, "\""] | attrs])
+  defp opts_to_attrs([{:text_anchor, val} | t], attrs), do: opts_to_attrs(t, [[" text-anchor=\"", val, "\""] | attrs])
 
   defp opts_to_attrs([{:dominant_baseline, val} | t], attrs),
     do: opts_to_attrs(t, [[" dominant-baseline=\"", val, "\""] | attrs])
@@ -212,14 +200,11 @@ defmodule Contex.SVG do
   defp opts_to_attrs([{:alignment_baseline, val} | t], attrs),
     do: opts_to_attrs(t, [[" alignment-baseline=\"", val, "\""] | attrs])
 
-  defp opts_to_attrs([{:marker_start, val} | t], attrs),
-    do: opts_to_attrs(t, [[" marker-start=\"", val, "\""] | attrs])
+  defp opts_to_attrs([{:marker_start, val} | t], attrs), do: opts_to_attrs(t, [[" marker-start=\"", val, "\""] | attrs])
 
-  defp opts_to_attrs([{:marker_mid, val} | t], attrs),
-    do: opts_to_attrs(t, [[" marker-mid=\"", val, "\""] | attrs])
+  defp opts_to_attrs([{:marker_mid, val} | t], attrs), do: opts_to_attrs(t, [[" marker-mid=\"", val, "\""] | attrs])
 
-  defp opts_to_attrs([{:marker_end, val} | t], attrs),
-    do: opts_to_attrs(t, [[" marker-end=\"", val, "\""] | attrs])
+  defp opts_to_attrs([{:marker_end, val} | t], attrs), do: opts_to_attrs(t, [[" marker-end=\"", val, "\""] | attrs])
 
   defp opts_to_attrs([{:shape_rendering, val} | t], attrs),
     do: opts_to_attrs(t, [[" shape-rendering=\"", val, "\""] | attrs])

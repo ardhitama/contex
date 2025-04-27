@@ -15,17 +15,13 @@ defmodule ContinuousLinearScaleTest do
 
   describe "domain/2" do
     test "returns a ContinuousLinearScale" do
-      scale =
-        ContinuousLinearScale.new()
-        |> ContinuousLinearScale.domain([1.2, 2.4, 0.5, 0.2, 2.8])
+      scale = ContinuousLinearScale.domain(ContinuousLinearScale.new(), [1.2, 2.4, 0.5, 0.2, 2.8])
 
       assert scale.domain == {0.2, 2.8}
     end
 
     test "returns a ContinuousLinearScale for data with small values (largest_value <= 0.0001)" do
-      scale =
-        ContinuousLinearScale.new()
-        |> ContinuousLinearScale.domain([0.0, 0.0001, 0.0, 0.0001, 0.0])
+      scale = ContinuousLinearScale.domain(ContinuousLinearScale.new(), [0.0, 0.0001, 0.0, 0.0001, 0.0])
 
       assert scale.domain == {0.0, 0.0001}
     end

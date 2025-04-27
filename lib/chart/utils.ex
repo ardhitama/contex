@@ -11,8 +11,7 @@ defmodule Contex.Utils do
 
   def date_diff(%DateTime{} = a, %DateTime{} = b, unit), do: DateTime.diff(a, b, unit)
 
-  def date_diff(%NaiveDateTime{} = a, %NaiveDateTime{} = b, unit),
-    do: NaiveDateTime.diff(a, b, unit)
+  def date_diff(%NaiveDateTime{} = a, %NaiveDateTime{} = b, unit), do: NaiveDateTime.diff(a, b, unit)
 
   @doc """
   Adds intervals to dates. Note that only system time units (nanosecond, microsecond, millisecond, second) are
@@ -49,15 +48,14 @@ defmodule Contex.Utils do
 
   def date_add(%DateTime{} = dt, amount_to_add, unit), do: DateTime.add(dt, amount_to_add, unit)
 
-  def date_add(%NaiveDateTime{} = dt, amount_to_add, unit),
-    do: NaiveDateTime.add(dt, amount_to_add, unit)
+  def date_add(%NaiveDateTime{} = dt, amount_to_add, unit), do: NaiveDateTime.add(dt, amount_to_add, unit)
 
   defp is_last_day_of_month(%{year: year, month: month, day: day}) do
     :calendar.last_day_of_the_month(year, month) == day
   end
 
   defp date_min(a, b), do: if(date_compare(a, b) == :lt, do: a, else: b)
-  defp date_max(a, b), do: if(date_compare(a, b) != :lt, do: a, else: b)
+  defp date_max(a, b), do: if(date_compare(a, b) == :lt, do: b, else: a)
 
   def safe_min(nil, nil), do: nil
   def safe_min(nil, b), do: b
@@ -122,20 +120,17 @@ defmodule Contex.Utils do
     shifted = %{datetime | year: y + value}
     # If a plain shift of the year fails, then it likely falls on a leap day,
     # so set the day to the last day of that month
-    case :calendar.valid_date({shifted.year, shifted.month, shifted.day}) do
-      false ->
-        last_day = :calendar.last_day_of_the_month(shifted.year, shifted.month)
-        %{shifted | day: last_day}
-
-      true ->
-        shifted
+    if :calendar.valid_date({shifted.year, shifted.month, shifted.day}) do
+      shifted
+    else
+      last_day = :calendar.last_day_of_the_month(shifted.year, shifted.month)
+      %{shifted | day: last_day}
     end
   end
 
   defp shift_by(%{} = datetime, 0, :months), do: datetime
   # Positive shifts
-  defp shift_by(%{year: year, month: month, day: day} = datetime, value, :months)
-       when value > 0 do
+  defp shift_by(%{year: year, month: month, day: day} = datetime, value, :months) when value > 0 do
     if month + value <= 12 do
       ldom = :calendar.last_day_of_the_month(year, month + value)
 
@@ -152,18 +147,16 @@ defmodule Contex.Utils do
 
   # Negative shifts
   defp shift_by(%{year: year, month: month, day: day} = datetime, value, :months) do
-    cond do
-      month + value >= 1 ->
-        ldom = :calendar.last_day_of_the_month(year, month + value)
+    if month + value >= 1 do
+      ldom = :calendar.last_day_of_the_month(year, month + value)
 
-        if day > ldom do
-          %{datetime | month: month + value, day: ldom}
-        else
-          %{datetime | month: month + value}
-        end
-
-      :else ->
-        shift_by(%{datetime | year: year - 1, month: 12}, value + month, :months)
+      if day > ldom do
+        %{datetime | month: month + value, day: ldom}
+      else
+        %{datetime | month: month + value}
+      end
+    else
+      shift_by(%{datetime | year: year - 1, month: 12}, value + month, :months)
     end
   end
 end

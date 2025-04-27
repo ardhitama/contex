@@ -1,6 +1,4 @@
 defmodule Contex.Gallery.PointPlots do
-  import Contex.Gallery.Sample, only: [graph: 1]
-
   @moduledoc """
   A gallery of Line Charts.
 
@@ -13,6 +11,8 @@ defmodule Contex.Gallery.PointPlots do
 
 
   """
+
+  import Contex.Gallery.Sample, only: [graph: 1]
 
   @doc """
   PointPlots using a log scale.
@@ -51,5 +51,5 @@ defmodule Contex.Gallery.PointPlots do
   """)}
 
   """
-  def with_log_scale(), do: 0
+  def with_log_scale, do: 0
 end

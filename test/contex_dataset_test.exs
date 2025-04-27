@@ -58,7 +58,8 @@ defmodule ContexDatasetTest do
   describe "column_names/1" do
     test "returns names if data is a map", %{dataset_maps: dataset_maps} do
       assert [:x, :y, :z] ==
-               Dataset.column_names(dataset_maps)
+               dataset_maps
+               |> Dataset.column_names()
                |> Enum.sort()
     end
 
@@ -72,7 +73,8 @@ defmodule ContexDatasetTest do
 
     test "returns names if list data does not have headers" do
       assert [0, 1, 2, 3] ==
-               Dataset.new([[1, 2, 3, 4], [4, 5, 6, 4], [-3, -2, -1, 0]])
+               [[1, 2, 3, 4], [4, 5, 6, 4], [-3, -2, -1, 0]]
+               |> Dataset.new()
                |> Dataset.column_names()
     end
   end

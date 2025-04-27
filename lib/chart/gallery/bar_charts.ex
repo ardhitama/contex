@@ -1,6 +1,4 @@
 defmodule Contex.Gallery.BarCharts do
-  import Contex.Gallery.Sample, only: [graph: 1]
-
   @moduledoc """
   A gallery of Bar Charts.
 
@@ -16,6 +14,8 @@ defmodule Contex.Gallery.BarCharts do
   > Just open a ticket on GitHub and we'll post it here.
 
   """
+
+  import Contex.Gallery.Sample, only: [graph: 1]
 
   @doc """
   Bar charts using a log scale.
@@ -44,7 +44,7 @@ defmodule Contex.Gallery.BarCharts do
   """)}
 
   """
-  def with_log_scale(), do: 0
+  def with_log_scale, do: 0
 
   @doc """
   Some plain charts.
@@ -73,5 +73,5 @@ defmodule Contex.Gallery.BarCharts do
 
 
   """
-  def plain(), do: 0
+  def plain, do: 0
 end

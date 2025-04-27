@@ -1,12 +1,16 @@
 defmodule ContexBarChartTest do
   use ExUnit.Case
 
-  alias Contex.{Dataset, BarChart, Plot}
   import SweetXml
+
+  alias Contex.BarChart
+  alias Contex.Dataset
+  alias Contex.Plot
 
   setup do
     plot =
-      Dataset.new([{"Category 1", 10, 20}, {"Category 2", 30, 40}], [
+      [{"Category 1", 10, 20}, {"Category 2", 30, 40}]
+      |> Dataset.new([
         "Category",
         "Series 1",
         "Series 2"
@@ -28,7 +32,8 @@ defmodule ContexBarChartTest do
 
     test "given data from a map and a valid column map, returns a BarChart struct accordingly" do
       plot =
-        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+        [%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}]
+        |> Dataset.new()
         |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]})
 
       assert get_option(plot, :width) == 100
@@ -42,7 +47,8 @@ defmodule ContexBarChartTest do
         ArgumentError,
         "Can not create default data mappings with Map data.",
         fn ->
-          Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+          [%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}]
+          |> Dataset.new()
           |> BarChart.new()
         end
       )
@@ -53,7 +59,8 @@ defmodule ContexBarChartTest do
         RuntimeError,
         "Required mapping(s) \"category_col\" not included in column map.",
         fn ->
-          Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+          [%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}]
+          |> Dataset.new()
           |> BarChart.new(mapping: %{x_col: "bb", value_cols: ["aa"]})
         end
       )
@@ -61,13 +68,15 @@ defmodule ContexBarChartTest do
 
     test "Check data labels value can be passed with option" do
       plot =
-        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+        [%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}]
+        |> Dataset.new()
         |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]}, data_labels: false)
 
       assert get_option(plot, :data_labels) == false
 
       plot =
-        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+        [%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}]
+        |> Dataset.new()
         |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]}, data_labels: true)
 
       assert get_option(plot, :data_labels) == true
@@ -75,7 +84,8 @@ defmodule ContexBarChartTest do
 
     test "Check colour scheme can be passed with option" do
       plot =
-        Dataset.new([%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}])
+        [%{"bb" => 2, "aa" => 2}, %{"bb" => 3, "aa" => 4}]
+        |> Dataset.new()
         |> BarChart.new(mapping: %{category_col: "bb", value_cols: ["aa"]}, colour_palette: :warm)
 
       assert get_option(plot, :colour_palette) == :warm
@@ -120,7 +130,8 @@ defmodule ContexBarChartTest do
       plot = BarChart.axis_label_rotation(plot, 45)
 
       assert ["rotate(-45)"] ==
-               Plot.new(200, 200, plot)
+               200
+               |> Plot.new(200, plot)
                |> Plot.to_svg()
                |> elem(1)
                |> IO.chardata_to_string()
@@ -158,7 +169,7 @@ defmodule ContexBarChartTest do
     end
 
     test "sets the palette to :default without an atom or list", %{plot: plot} do
-      plot = BarChart.colours(plot, 12345)
+      plot = BarChart.colours(plot, 12_345)
       assert get_option(plot, :colour_palette) == :default
     end
   end
@@ -199,7 +210,8 @@ defmodule ContexBarChartTest do
 
   describe "to_svg/1" do
     defp plot_iodata_to_map(plot_iodata) do
-      IO.chardata_to_string(plot_iodata)
+      plot_iodata
+      |> IO.chardata_to_string()
       |> xpath(~x"//g/rect"l,
         x: ~x"./@x"s,
         y: ~x"./@y"s,
@@ -215,13 +227,15 @@ defmodule ContexBarChartTest do
       plot = BarChart.set_val_col_names(plot, ["Series 1", "Series 2"])
 
       rects_map =
-        Plot.new(200, 200, plot)
+        200
+        |> Plot.new(200, plot)
         |> Plot.to_svg()
         |> elem(1)
         |> plot_iodata_to_map()
 
       string_to_rounded_float = fn value ->
-        Float.parse(value)
+        value
+        |> Float.parse()
         |> elem(0)
         |> Float.round(3)
       end
@@ -232,7 +246,8 @@ defmodule ContexBarChartTest do
                [51.429, 58.0, 61.0, 68.571],
                [68.571, 58.0, 61.0, 0.0]
              ] ==
-               Stream.map(rects_map, &Map.delete(&1, :title))
+               rects_map
+               |> Stream.map(&Map.delete(&1, :title))
                |> Stream.map(&Enum.unzip/1)
                |> Stream.map(fn value ->
                  elem(value, 1)
@@ -247,13 +262,12 @@ defmodule ContexBarChartTest do
 
     test "generates equivalent output when passed map data", %{plot: plot} do
       map_plot_svg =
-        Dataset.new([
+        [
           %{"Category" => "Category 1", "Series 1" => 10, "Series_2" => 20},
           %{"Category" => "Category 2", "Series 1" => 30, "Series_2" => 40}
-        ])
-        |> Plot.new(BarChart, 200, 200,
-          mapping: %{category_col: "Category", value_cols: ["Series 1"]}
-        )
+        ]
+        |> Dataset.new()
+        |> Plot.new(BarChart, 200, 200, mapping: %{category_col: "Category", value_cols: ["Series 1"]})
         |> Plot.to_svg()
 
       assert map_plot_svg ==
